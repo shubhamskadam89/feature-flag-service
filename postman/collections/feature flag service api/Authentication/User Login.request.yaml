@@ -1,0 +1,38 @@
+$kind: http-request
+name: User Login
+method: POST
+url: "{{baseUrl}}{{apiPrefix}}/auth/login"
+order: 2000
+headers:
+  Content-Type: application/json
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 200) {
+        const responseBody = pm.response.json();
+        const authData = responseBody.data || responseBody;
+        const setVariable = (key, value) => {
+          pm.collectionVariables.set(key, value);
+          if (pm.environment.name) {
+            pm.environment.set(key, value);
+          }
+        };
+
+        if (authData.token) {
+          setVariable("authToken", authData.token);
+        }
+        if (authData.userId) {
+          setVariable("userId", authData.userId);
+        }
+        if (authData.organizationId) {
+          setVariable("organizationId", authData.organizationId);
+        }
+      }
+    language: text/javascript
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{userEmail}}",
+      "password": "{{userPassword}}"
+    }

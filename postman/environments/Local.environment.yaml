@@ -1,0 +1,24 @@
+name: Local Environment
+values:
+  - key: baseUrl
+    value: 'http://localhost:8080'
+  - key: apiPrefix
+    value: /api/v1
+  - key: userEmail
+    value: shubham@example.com
+  - key: userPassword
+    value: Password123!
+  - key: userName
+    value: Shubham Kadam
+  - key: orgName
+    value: Acme Corp
+  - key: authToken
+    value: ''
+  - key: userId
+    value: ''
+  - key: organizationId
+    value: ''
+  - key: envKey
+    value: env_prod_7a91
+  - key: envApiKey
+    value: ff_prod_secret_key

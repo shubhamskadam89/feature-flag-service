@@ -1,0 +1,10 @@
+$kind: http-request
+method: GET
+url: '{{baseUrl}}{{apiPrefix}}/evaluate/{{envKey}}'
+order: 3000
+headers:
+  - key: X-Environment-Key
+    value: '{{envApiKey}}'
+queryParams:
+  - key: userId
+    value: '{{userId}}'
