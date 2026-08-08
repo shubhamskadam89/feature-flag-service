@@ -23,17 +23,18 @@ These may become extensions later, but only once the core system is stable and a
 ### Phase 0 — Foundation
 - [x] Repository initialization
 - [x] README + architecture documentation
-- [ ] Spring Boot project skeleton
-- [ ] Docker Compose (PostgreSQL + Redis)
-- [ ] CI pipeline
+- [x] Spring Boot project skeleton
+- [x] Docker Compose (PostgreSQL + Redis)
+- [x] CI pipeline
 
 ### Phase 1 — Core Domain
-- [ ] `User`, `Organization`, `OrganizationMembership`
-- [ ] `Project`, `Environment`
-- [ ] `Feature`, `FeatureState`
-- [ ] `AuditLog`
-- [ ] Database constraints (see `ARCHITECTURE.md`)
-- [ ] Flyway migrations
+- [x] `User`, `Organization`, `OrganizationMembership`
+- [x] `Project`, `Environment`
+- [x] `Feature`, `FeatureState`
+- [x] `AuditLog`
+- [x] Database constraints (see `ARCHITECTURE.md`)
+- [x] Flyway migrations
+
 
 ### Phase 2 — Authentication & Authorization
 - [ ] Registration → auto-create organization → ADMIN membership
