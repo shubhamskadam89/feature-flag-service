@@ -17,4 +17,8 @@ public interface FeatureRepository extends JpaRepository<Feature, UUID> {
     Optional<Feature> findByProjectIdAndKeyAndDeletedAtIsNull(UUID projectId, String key);
 
     boolean existsByProjectIdAndKeyAndDeletedAtIsNull(UUID projectId, String key);
+
+    List<Feature> findByProjectOrganizationIdAndDeletedAtIsNull(UUID organizationId);
+
+    Optional<Feature> findByIdAndProjectOrganizationIdAndDeletedAtIsNull(UUID id, UUID organizationId);
 }

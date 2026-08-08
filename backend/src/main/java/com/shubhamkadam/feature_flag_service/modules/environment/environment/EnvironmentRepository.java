@@ -17,4 +17,10 @@ public interface EnvironmentRepository extends JpaRepository<Environment, UUID> 
     Optional<Environment> findByApiKeyHashAndDeletedAtIsNull(String apiKeyHash);
 
     boolean existsByProjectIdAndNameAndDeletedAtIsNull(UUID projectId, String name);
+
+    List<Environment> findByOrganizationIdAndDeletedAtIsNull(UUID organizationId);
+
+    Optional<Environment> findByIdAndOrganizationIdAndDeletedAtIsNull(UUID id, UUID organizationId);
+
+    List<Environment> findByProjectIdAndOrganizationIdAndDeletedAtIsNull(UUID projectId, UUID organizationId);
 }
