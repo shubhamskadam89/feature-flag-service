@@ -15,6 +15,7 @@ import com.shubhamkadam.feature_flag_service.modules.user.User;
 import com.shubhamkadam.feature_flag_service.modules.user.UserRepository;
 import com.shubhamkadam.feature_flag_service.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +28,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -38,7 +40,9 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        log.info("Attempting to register user with email: {}", request.getEmail());
         if (userRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(request.getEmail())) {
+            log.warn("Registration failed: User with email {} already exists", request.getEmail());
             throw new ResourceAlreadyExistsException("User", "email", request.getEmail());
         }
 
@@ -69,7 +73,10 @@ public class AuthService {
                 .build();
         membershipRepository.save(membership);
 
+        log.debug("Successfully created user {} and organization {}", user.getId(), organization.getId());
+
         String jwtToken = jwtService.generateToken(user);
+        log.info("User {} registered successfully", request.getEmail());
 
         return AuthResponse.builder()
                 .token(jwtToken)
@@ -83,6 +90,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
+        log.info("Attempting login for user with email: {}", request.getEmail());
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -91,6 +99,7 @@ public class AuthService {
                     )
             );
         } catch (BadCredentialsException ex) {
+            log.warn("Login failed: Invalid credentials for email {}", request.getEmail());
             throw new UnauthorizedException("Invalid email or password");
         }
 
@@ -100,7 +109,10 @@ public class AuthService {
         List<Membership> memberships = membershipRepository.findByIdUserId(user.getId());
         Organization primaryOrganization = memberships.isEmpty() ? null : memberships.get(0).getOrganization();
 
+        log.debug("Generating JWT token for user {}", user.getId());
         String jwtToken = jwtService.generateToken(user);
+        
+        log.info("User {} logged in successfully", request.getEmail());
 
         return AuthResponse.builder()
                 .token(jwtToken)
