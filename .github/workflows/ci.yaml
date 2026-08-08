@@ -1,0 +1,93 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  backend:
+    name: Backend (Java & Spring Boot)
+    runs-on: ubuntu-latest
+
+    env:
+      POSTGRES_USER: ${{ vars.POSTGRES_USER || 'postgres' }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'postgres' }}
+      POSTGRES_DB: ${{ vars.POSTGRES_DB || 'feature_flag_service' }}
+      POSTGRES_PORT: ${{ vars.POSTGRES_PORT || '5433' }}
+      REDIS_HOST: ${{ vars.REDIS_HOST || 'localhost' }}
+      REDIS_PORT: ${{ vars.REDIS_PORT || '6379' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up environment file
+        run: |
+          cat <<EOF > .env
+          POSTGRES_USER=${POSTGRES_USER}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          POSTGRES_DB=${POSTGRES_DB}
+          POSTGRES_PORT=${POSTGRES_PORT}
+          REDIS_HOST=${REDIS_HOST}
+          REDIS_PORT=${REDIS_PORT}
+          EOF
+
+
+      - name: Start PostgreSQL and Redis services
+        run: docker compose up -d
+
+      - name: Wait for PostgreSQL readiness
+        run: |
+          until docker compose exec -T postgres pg_isready -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"; do
+            echo "Waiting for PostgreSQL to accept connections..."
+            sleep 1
+          done
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+          cache-dependency-path: 'backend/pom.xml'
+
+      - name: Build and run backend Maven test suite
+        working-directory: backend
+        run: |
+          if [ -f "./mvnw" ]; then
+            chmod +x ./mvnw
+            ./mvnw --batch-mode clean test
+          else
+            mvn --batch-mode clean test
+          fi
+
+  frontend:
+    name: Frontend (React & Vite)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run linter
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build frontend application
+        working-directory: frontend
+        run: npm run build
