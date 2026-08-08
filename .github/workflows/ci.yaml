@@ -14,12 +14,12 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: feature_flag_service
-      POSTGRES_PORT: 5432
-      REDIS_HOST: localhost
-      REDIS_PORT: 6379
+      POSTGRES_USER: ${{ vars.POSTGRES_USER || 'postgres' }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'postgres' }}
+      POSTGRES_DB: ${{ vars.POSTGRES_DB || 'feature_flag_service' }}
+      POSTGRES_PORT: ${{ vars.POSTGRES_PORT || '5433' }}
+      REDIS_HOST: ${{ vars.REDIS_HOST || 'localhost' }}
+      REDIS_PORT: ${{ vars.REDIS_PORT || '6379' }}
 
     steps:
       - name: Checkout repository
@@ -27,9 +27,15 @@ jobs:
 
       - name: Set up environment file
         run: |
-          if [ ! -f .env ]; then
-            cp .env.example .env
-          fi
+          cat <<EOF > .env
+          POSTGRES_USER=${POSTGRES_USER}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          POSTGRES_DB=${POSTGRES_DB}
+          POSTGRES_PORT=${POSTGRES_PORT}
+          REDIS_HOST=${REDIS_HOST}
+          REDIS_PORT=${REDIS_PORT}
+          EOF
+
 
       - name: Start PostgreSQL and Redis services
         run: docker compose up -d
