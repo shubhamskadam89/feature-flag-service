@@ -1,0 +1,70 @@
+# Environment & Local Secrets
+.env
+!.env.example
+*.env.local
+.env.*.local
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE & Editor Files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+*~
+.classpath
+.project
+.settings/
+.factorypath
+.springBeans
+.externalToolBuilders/
+.recommenders/
+
+# Java & Maven (Spring Boot)
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+HELP.md
+
+# Maven Wrapper binaries
+!**/wrapper/maven-wrapper.jar
+!**/mvnw
+!**/mvnw.cmd
+
+# Node & React (Frontend)
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+.vite/
+.next/
+out/
+.npm/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Postman & Testing Artifacts
+.postman/
+*.postman_dump

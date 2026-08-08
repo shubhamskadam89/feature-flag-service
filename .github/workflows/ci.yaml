@@ -13,9 +13,33 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
 
+    env:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: feature_flag_service
+      POSTGRES_PORT: 5432
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up environment file
+        run: |
+          if [ ! -f .env ]; then
+            cp .env.example .env
+          fi
+
+      - name: Start PostgreSQL and Redis services
+        run: docker compose up -d
+
+      - name: Wait for PostgreSQL readiness
+        run: |
+          until docker compose exec -T postgres pg_isready -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"; do
+            echo "Waiting for PostgreSQL to accept connections..."
+            sleep 1
+          done
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -23,8 +47,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
+          cache-dependency-path: 'backend/pom.xml'
 
-      - name: Build and run Maven test suite
+      - name: Build and run backend Maven test suite
+        working-directory: backend
         run: |
           if [ -f "./mvnw" ]; then
             chmod +x ./mvnw
