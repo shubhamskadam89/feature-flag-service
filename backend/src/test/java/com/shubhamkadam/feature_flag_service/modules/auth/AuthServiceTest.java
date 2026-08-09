@@ -69,7 +69,6 @@ class AuthServiceTest {
             .name("Shubham Kadam")
             .email("shubham@example.com")
             .password("password123")
-            .organizationName("Acme Corp")
             .build();
 
         loginRequest = LoginRequest.builder().email("shubham@example.com").password("password123").build();
@@ -85,13 +84,11 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Should successfully register user, create organization and admin membership, and return JWT token")
+    @DisplayName("Should successfully register user and return JWT token")
     void register_Success() {
         when(userRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(registerRequest.getEmail())).thenReturn(false);
         when(passwordEncoder.encode(registerRequest.getPassword())).thenReturn("hashed_password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(membershipRepository.save(any(Membership.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtService.generateToken(any(User.class))).thenReturn("mock_jwt_token");
 
         AuthResponse response = authService.register(registerRequest);
@@ -100,11 +97,8 @@ class AuthServiceTest {
         assertThat(response.getToken()).isEqualTo("mock_jwt_token");
         assertThat(response.getEmail()).isEqualTo("shubham@example.com");
         assertThat(response.getName()).isEqualTo("Shubham Kadam");
-        assertThat(response.getOrganizationName()).isEqualTo("Acme Corp");
 
         verify(userRepository).save(any(User.class));
-        verify(organizationRepository).save(any(Organization.class));
-        verify(membershipRepository).save(any(Membership.class));
     }
 
     @Test
@@ -117,7 +111,6 @@ class AuthServiceTest {
             .hasMessageContaining("User already exists with email");
 
         verify(userRepository, never()).save(any(User.class));
-        verify(organizationRepository, never()).save(any(Organization.class));
     }
 
     @Test
