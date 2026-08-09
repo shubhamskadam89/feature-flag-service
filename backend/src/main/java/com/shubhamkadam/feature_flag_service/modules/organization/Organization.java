@@ -40,6 +40,9 @@ public class Organization {
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 
+    @Column(name = "created_by", nullable = false, updatable = false)
+    private UUID createdBy;
+
     @PrePersist
     protected void onCreate() {
         if (this.id == null) {
