@@ -9,6 +9,9 @@ public class ResourceAlreadyExistsException extends ApiException {
     }
 
     public ResourceAlreadyExistsException(String resourceName, String fieldName, Object fieldValue) {
-        super(String.format("%s already exists with %s: '%s'", resourceName, fieldName, fieldValue), HttpStatus.CONFLICT);
+        super(
+            String.format("%s already exists with %s: '%s'", resourceName, fieldName, fieldValue),
+            HttpStatus.CONFLICT
+        );
     }
 }

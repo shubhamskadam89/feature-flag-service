@@ -1,5 +1,8 @@
 package com.shubhamkadam.feature_flag_service.security;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.shubhamkadam.feature_flag_service.exceptions.BadRequestException;
 import com.shubhamkadam.feature_flag_service.exceptions.ForbiddenException;
 import com.shubhamkadam.feature_flag_service.exceptions.UnauthorizedException;
@@ -10,6 +13,9 @@ import com.shubhamkadam.feature_flag_service.modules.organization.Organization;
 import com.shubhamkadam.feature_flag_service.modules.user.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,13 +25,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import java.util.Collections;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class OrganizationContextInterceptorTest {
@@ -75,16 +74,17 @@ class OrganizationContextInterceptorTest {
     void shouldSetContextWithValidHeader() {
         when(request.getRequestURI()).thenReturn("/api/v1/projects");
         when(request.getHeader("X-Organization-Id")).thenReturn(testOrg.getId().toString());
-        
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(testUser, null, Collections.emptyList()));
+
+        SecurityContextHolder.getContext()
+            .setAuthentication(new UsernamePasswordAuthenticationToken(testUser, null, Collections.emptyList()));
 
         Membership membership = Membership.builder().role(MembershipRole.ADMIN).build();
-        when(membershipRepository.findByIdOrganizationIdAndIdUserId(testOrg.getId(), testUser.getId()))
-                .thenReturn(Optional.of(membership));
+        when(membershipRepository.findByIdOrganizationIdAndIdUserId(testOrg.getId(), testUser.getId())).thenReturn(
+            Optional.of(membership)
+        );
 
         assertTrue(interceptor.preHandle(request, response, new Object()));
-        
+
         assertNotNull(OrganizationContextHolder.getContext());
         assertEquals(testOrg.getId(), OrganizationContextHolder.getContext().getOrganizationId());
         assertEquals(MembershipRole.ADMIN, OrganizationContextHolder.getContext().getRole());
@@ -94,12 +94,13 @@ class OrganizationContextInterceptorTest {
     void shouldThrowForbiddenIfMembershipNotFoundForHeader() {
         when(request.getRequestURI()).thenReturn("/api/v1/projects");
         when(request.getHeader("X-Organization-Id")).thenReturn(testOrg.getId().toString());
-        
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(testUser, null, Collections.emptyList()));
 
-        when(membershipRepository.findByIdOrganizationIdAndIdUserId(testOrg.getId(), testUser.getId()))
-                .thenReturn(Optional.empty());
+        SecurityContextHolder.getContext()
+            .setAuthentication(new UsernamePasswordAuthenticationToken(testUser, null, Collections.emptyList()));
+
+        when(membershipRepository.findByIdOrganizationIdAndIdUserId(testOrg.getId(), testUser.getId())).thenReturn(
+            Optional.empty()
+        );
 
         assertThrows(ForbiddenException.class, () -> interceptor.preHandle(request, response, new Object()));
     }

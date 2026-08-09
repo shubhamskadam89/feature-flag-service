@@ -6,15 +6,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import java.time.OffsetDateTime;
+import java.util.Objects;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.OffsetDateTime;
-import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Table(name = "organizations")
@@ -29,7 +28,7 @@ public class Organization {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "name", nullable = false, length = 100)
+    @Column(name = "name", nullable = false, length = 100,unique = true)
     private String name;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -40,6 +39,9 @@ public class Organization {
 
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
+
+    @Column(name = "created_by", nullable = false, updatable = false)
+    private UUID createdBy;
 
     @PrePersist
     protected void onCreate() {

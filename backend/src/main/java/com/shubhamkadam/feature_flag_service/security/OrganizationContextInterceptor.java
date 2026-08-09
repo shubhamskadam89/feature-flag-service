@@ -8,6 +8,8 @@ import com.shubhamkadam.feature_flag_service.modules.membership.MembershipReposi
 import com.shubhamkadam.feature_flag_service.modules.user.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -15,9 +17,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
-
-import java.util.List;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -30,7 +29,7 @@ public class OrganizationContextInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String path = request.getRequestURI();
-        
+
         // Skip for auth and evaluation endpoints
         if (path.startsWith("/api/v1/auth") || path.startsWith("/api/v1/evaluation")) {
             return true;
@@ -51,11 +50,14 @@ public class OrganizationContextInterceptor implements HandlerInterceptor {
             } catch (IllegalArgumentException e) {
                 throw new BadRequestException("Invalid Organization ID format");
             }
-            
-            Membership membership = membershipRepository.findByIdOrganizationIdAndIdUserId(organizationId, user.getId())
-                    .orElseThrow(() -> new ForbiddenException("User does not have access to this organization"));
-            
-            OrganizationContextHolder.setContext(new OrganizationContextHolder.OrganizationContext(organizationId, membership.getRole()));
+
+            Membership membership = membershipRepository
+                .findByIdOrganizationIdAndIdUserId(organizationId, user.getId())
+                .orElseThrow(() -> new ForbiddenException("User does not have access to this organization"));
+
+            OrganizationContextHolder.setContext(
+                new OrganizationContextHolder.OrganizationContext(organizationId, membership.getRole())
+            );
         } else {
             // Fallback to primary organization if exactly one exists, else throw BadRequest
             List<Membership> memberships = membershipRepository.findByIdUserId(user.getId());
@@ -63,9 +65,16 @@ public class OrganizationContextInterceptor implements HandlerInterceptor {
                 throw new ForbiddenException("User does not belong to any organization");
             } else if (memberships.size() == 1) {
                 Membership membership = memberships.get(0);
-                OrganizationContextHolder.setContext(new OrganizationContextHolder.OrganizationContext(membership.getOrganization().getId(), membership.getRole()));
+                OrganizationContextHolder.setContext(
+                    new OrganizationContextHolder.OrganizationContext(
+                        membership.getOrganization().getId(),
+                        membership.getRole()
+                    )
+                );
             } else {
-                throw new BadRequestException("Multiple organizations found. Please specify " + ORG_HEADER + " header.");
+                throw new BadRequestException(
+                    "Multiple organizations found. Please specify " + ORG_HEADER + " header."
+                );
             }
         }
 
@@ -73,7 +82,12 @@ public class OrganizationContextInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+    public void afterCompletion(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        Object handler,
+        Exception ex
+    ) {
         OrganizationContextHolder.clearContext();
     }
 }

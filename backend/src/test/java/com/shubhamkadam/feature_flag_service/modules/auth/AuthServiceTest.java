@@ -1,5 +1,12 @@
 package com.shubhamkadam.feature_flag_service.modules.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceAlreadyExistsException;
 import com.shubhamkadam.feature_flag_service.exceptions.UnauthorizedException;
 import com.shubhamkadam.feature_flag_service.modules.auth.dto.AuthResponse;
@@ -12,6 +19,9 @@ import com.shubhamkadam.feature_flag_service.modules.organization.OrganizationRe
 import com.shubhamkadam.feature_flag_service.modules.user.User;
 import com.shubhamkadam.feature_flag_service.modules.user.UserRepository;
 import com.shubhamkadam.feature_flag_service.security.JwtService;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,18 +33,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -68,38 +66,29 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         registerRequest = RegisterRequest.builder()
-                .name("Shubham Kadam")
-                .email("shubham@example.com")
-                .password("password123")
-                .organizationName("Acme Corp")
-                .build();
+            .name("Shubham Kadam")
+            .email("shubham@example.com")
+            .password("password123")
+            .build();
 
-        loginRequest = LoginRequest.builder()
-                .email("shubham@example.com")
-                .password("password123")
-                .build();
+        loginRequest = LoginRequest.builder().email("shubham@example.com").password("password123").build();
 
         mockUser = User.builder()
-                .id(UUID.randomUUID())
-                .name("Shubham Kadam")
-                .email("shubham@example.com")
-                .passwordHash("hashed_password")
-                .build();
+            .id(UUID.randomUUID())
+            .name("Shubham Kadam")
+            .email("shubham@example.com")
+            .passwordHash("hashed_password")
+            .build();
 
-        mockOrganization = Organization.builder()
-                .id(UUID.randomUUID())
-                .name("Acme Corp")
-                .build();
+        mockOrganization = Organization.builder().id(UUID.randomUUID()).name("Acme Corp").build();
     }
 
     @Test
-    @DisplayName("Should successfully register user, create organization and admin membership, and return JWT token")
+    @DisplayName("Should successfully register user and return JWT token")
     void register_Success() {
         when(userRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(registerRequest.getEmail())).thenReturn(false);
         when(passwordEncoder.encode(registerRequest.getPassword())).thenReturn("hashed_password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(membershipRepository.save(any(Membership.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtService.generateToken(any(User.class))).thenReturn("mock_jwt_token");
 
         AuthResponse response = authService.register(registerRequest);
@@ -108,11 +97,8 @@ class AuthServiceTest {
         assertThat(response.getToken()).isEqualTo("mock_jwt_token");
         assertThat(response.getEmail()).isEqualTo("shubham@example.com");
         assertThat(response.getName()).isEqualTo("Shubham Kadam");
-        assertThat(response.getOrganizationName()).isEqualTo("Acme Corp");
 
         verify(userRepository).save(any(User.class));
-        verify(organizationRepository).save(any(Organization.class));
-        verify(membershipRepository).save(any(Membership.class));
     }
 
     @Test
@@ -121,23 +107,21 @@ class AuthServiceTest {
         when(userRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(registerRequest.getEmail())).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(registerRequest))
-                .isInstanceOf(ResourceAlreadyExistsException.class)
-                .hasMessageContaining("User already exists with email");
+            .isInstanceOf(ResourceAlreadyExistsException.class)
+            .hasMessageContaining("User already exists with email");
 
         verify(userRepository, never()).save(any(User.class));
-        verify(organizationRepository, never()).save(any(Organization.class));
     }
 
     @Test
     @DisplayName("Should successfully authenticate and issue JWT token on valid login")
     void login_Success() {
-        when(userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(loginRequest.getEmail())).thenReturn(Optional.of(mockUser));
-        when(membershipRepository.findByIdUserId(mockUser.getId())).thenReturn(List.of(
-                Membership.builder()
-                        .organization(mockOrganization)
-                        .user(mockUser)
-                        .build()
-        ));
+        when(userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(loginRequest.getEmail())).thenReturn(
+            Optional.of(mockUser)
+        );
+        when(membershipRepository.findByIdUserId(mockUser.getId())).thenReturn(
+            List.of(Membership.builder().organization(mockOrganization).user(mockUser).build())
+        );
         when(jwtService.generateToken(mockUser)).thenReturn("mock_jwt_token");
 
         AuthResponse response = authService.login(loginRequest);
@@ -153,11 +137,12 @@ class AuthServiceTest {
     @Test
     @DisplayName("Should throw UnauthorizedException when login credentials are invalid")
     void login_InvalidCredentials_ThrowsException() {
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Bad credentials"));
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenThrow(
+            new BadCredentialsException("Bad credentials")
+        );
 
         assertThatThrownBy(() -> authService.login(loginRequest))
-                .isInstanceOf(UnauthorizedException.class)
-                .hasMessageContaining("Invalid email or password");
+            .isInstanceOf(UnauthorizedException.class)
+            .hasMessageContaining("Invalid email or password");
     }
 }
