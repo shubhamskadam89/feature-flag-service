@@ -1,15 +1,13 @@
 package com.shubhamkadam.feature_flag_service.modules.environment.environment;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public interface EnvironmentRepository extends JpaRepository<Environment, UUID> {
-
     List<Environment> findByProjectIdAndDeletedAtIsNull(UUID projectId);
 
     Optional<Environment> findByIdAndProjectIdAndDeletedAtIsNull(UUID id, UUID projectId);

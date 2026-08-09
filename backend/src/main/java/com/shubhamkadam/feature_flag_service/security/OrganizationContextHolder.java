@@ -1,7 +1,6 @@
 package com.shubhamkadam.feature_flag_service.security;
 
 import com.shubhamkadam.feature_flag_service.modules.membership.MembershipRole;
-
 import java.util.UUID;
 
 public class OrganizationContextHolder {
@@ -26,6 +25,7 @@ public class OrganizationContextHolder {
     }
 
     public static class OrganizationContext {
+
         private final UUID organizationId;
         private final MembershipRole role;
 

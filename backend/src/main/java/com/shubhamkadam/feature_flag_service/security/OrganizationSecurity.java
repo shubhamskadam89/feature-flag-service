@@ -13,6 +13,8 @@ public class OrganizationSecurity {
 
     public boolean isMemberOrAdmin() {
         OrganizationContextHolder.OrganizationContext context = OrganizationContextHolder.getContext();
-        return context != null && (context.getRole() == MembershipRole.MEMBER || context.getRole() == MembershipRole.ADMIN);
+        return (
+            context != null && (context.getRole() == MembershipRole.MEMBER || context.getRole() == MembershipRole.ADMIN)
+        );
     }
 }

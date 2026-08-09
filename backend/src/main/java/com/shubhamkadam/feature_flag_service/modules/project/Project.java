@@ -1,24 +1,16 @@
 package com.shubhamkadam.feature_flag_service.modules.project;
 
 import com.shubhamkadam.feature_flag_service.modules.organization.Organization;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import com.shubhamkadam.feature_flag_service.modules.user.User;
+import jakarta.persistence.*;
+import java.time.OffsetDateTime;
+import java.util.Objects;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.OffsetDateTime;
-import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Table(name = "projects")
@@ -46,8 +38,15 @@ public class Project {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", nullable = false)
+    private User createdBy;
 
     @PrePersist
     protected void onCreate() {

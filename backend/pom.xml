@@ -55,6 +55,11 @@
                 <artifactId>jjwt-jackson</artifactId>
                 <version>0.11.5</version>
             </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>3.1.0</version>
+        </dependency>
 
 
 		<dependency>
@@ -112,6 +117,24 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>com.hubspot.maven.plugins</groupId>
+				<artifactId>prettier-maven-plugin</artifactId>
+				<version>0.22</version>
+				<configuration>
+					<prettierJavaVersion>2.6.4</prettierJavaVersion>
+					<printWidth>120</printWidth>
+					<tabWidth>4</tabWidth>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>write</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

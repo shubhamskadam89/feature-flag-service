@@ -22,3 +22,5 @@ values:
     value: env_prod_7a91
   - key: envApiKey
     value: ff_prod_secret_key
+  - key: projectName
+    value: ''
