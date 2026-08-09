@@ -1,13 +1,12 @@
 package com.shubhamkadam.feature_flag_service.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.time.Instant;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
-import java.util.List;
 
 @Data
 @Builder
@@ -15,6 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponse {
+
     private Instant timestamp;
     private int status;
     private String error;
@@ -26,6 +26,7 @@ public class ErrorResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ValidationError {
+
         private String field;
         private String message;
     }
