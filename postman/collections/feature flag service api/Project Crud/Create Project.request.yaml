@@ -1,16 +1,18 @@
 $kind: http-request
-name: Register User & Organization
+name: Create Project
 method: POST
-url: "{{baseUrl}}{{apiPrefix}}/auth/register"
-order: 1000
+url: "{{baseUrl}}{{apiPrefix}}/projects"
+auth:
+  type: bearer
+  credentials:
+    token: "{{authToken}}"
+order: 2000
 headers:
   Content-Type: application/json
 scripts:
   - type: beforeRequest
-    code: |
-      const email = pm.variables.replaceIn("{{$randomEmail}}");
-      const name = pm.variables.replaceIn("{{$randomFullName}}");
-      const password = `Password123!${Date.now()}`;
+    code: |-
+      const projectName = pm.variables.replaceIn("{{$randomCompanyName}}");
       const setVariable = (key, value) => {
         pm.collectionVariables.set(key, value);
         if (pm.environment.name) {
@@ -18,15 +20,13 @@ scripts:
         }
       };
 
-      setVariable("userEmail", email);
-      setVariable("userPassword", password);
-      setVariable("userName", name);
+      setVariable("projectName", projectName);
     language: text/javascript
   - type: afterResponse
     code: |-
       if (pm.response.code === 201 || pm.response.code === 200) {
         const responseBody = pm.response.json();
-        const authData = responseBody.data || responseBody;
+        const projectData = responseBody.data || responseBody;
         const setVariable = (key, value) => {
           pm.collectionVariables.set(key, value);
           if (pm.environment.name) {
@@ -34,21 +34,14 @@ scripts:
           }
         };
 
-        if (authData.token) {
-          setVariable("authToken", authData.token);
+        if (projectData.id) {
+          setVariable("projectId", projectData.id);
         }
-        if (authData.userId) {
-          setVariable("userId", authData.userId);
-        }
-       
       }
     language: text/javascript
 body:
   type: json
   content: |-
     {
-      "name": "{{userName}}",
-      "email": "{{userEmail}}",
-      "password": "{{userPassword}}"
-
+      "projectName": "{{projectName}}"
     }

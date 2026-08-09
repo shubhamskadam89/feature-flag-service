@@ -1,0 +1,30 @@
+$kind: http-request
+name: Update Project
+method: PATCH
+url: "{{baseUrl}}{{apiPrefix}}/projects/{{projectId}}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{authToken}}"
+order: 2003
+headers:
+  Content-Type: application/json
+scripts:
+  - type: beforeRequest
+    code: |-
+      const projectName = pm.variables.replaceIn("{{$randomCompanyName}}");
+      const setVariable = (key, value) => {
+        pm.collectionVariables.set(key, value);
+        if (pm.environment.name) {
+          pm.environment.set(key, value);
+        }
+      };
+
+      setVariable("projectName", projectName);
+    language: text/javascript
+body:
+  type: json
+  content: |-
+    {
+      "projectName": "{{projectName}}"
+    }

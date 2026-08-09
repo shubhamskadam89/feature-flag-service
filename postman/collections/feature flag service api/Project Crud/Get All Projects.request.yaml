@@ -1,0 +1,32 @@
+$kind: http-request
+name: Get All Projects
+method: GET
+url: "{{baseUrl}}{{apiPrefix}}/projects"
+auth:
+  type: bearer
+  credentials:
+    token: "{{authToken}}"
+order: 2001
+headers:
+  Content-Type: application/json
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 200) {
+        const responseBody = pm.response.json();
+        const projects = responseBody.data || responseBody;
+        
+        if (Array.isArray(projects) && projects.length > 0) {
+          const projectData = projects[0];
+          if (projectData.id) {
+            const setVariable = (key, value) => {
+              pm.collectionVariables.set(key, value);
+              if (pm.environment.name) {
+                pm.environment.set(key, value);
+              }
+            };
+            setVariable("projectId", projectData.id);
+          }
+        }
+      }
+    language: text/javascript

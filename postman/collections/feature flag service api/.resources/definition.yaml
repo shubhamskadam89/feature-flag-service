@@ -12,3 +12,4 @@ variables:
   envApiKey: ff_prod_secret_key
   userId: ""
   organizationId: ""
+  projectName: ""

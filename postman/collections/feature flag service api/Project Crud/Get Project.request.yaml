@@ -1,0 +1,11 @@
+$kind: http-request
+name: Get Project
+method: GET
+url: "{{baseUrl}}{{apiPrefix}}/projects/{{projectId}}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{authToken}}"
+order: 2002
+headers:
+  Content-Type: application/json

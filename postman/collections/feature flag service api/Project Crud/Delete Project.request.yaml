@@ -1,0 +1,25 @@
+$kind: http-request
+name: Delete Project
+method: DELETE
+url: "{{baseUrl}}{{apiPrefix}}/projects/{{projectId}}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{authToken}}"
+order: 2004
+headers:
+  Content-Type: application/json
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 200 || pm.response.code === 204) {
+        const unsetVariable = (key) => {
+          pm.collectionVariables.unset(key);
+          if (pm.environment.name) {
+            pm.environment.unset(key);
+          }
+        };
+        // Clean up the projectId after successful deletion
+        unsetVariable("projectId");
+      }
+    language: text/javascript
