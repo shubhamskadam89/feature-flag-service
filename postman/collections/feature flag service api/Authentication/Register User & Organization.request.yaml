@@ -1,0 +1,58 @@
+$kind: http-request
+name: Register User & Organization
+method: POST
+url: "{{baseUrl}}{{apiPrefix}}/auth/register"
+order: 1000
+headers:
+  Content-Type: application/json
+scripts:
+  - type: beforeRequest
+    code: |-
+      const email = pm.variables.replaceIn("{{$randomEmail}}");
+      const name = pm.variables.replaceIn("{{$randomFullName}}");
+      const orgName = pm.variables.replaceIn("{{$randomCompanyName}}");
+      const password = `Password123!${Date.now()}`;
+      const setVariable = (key, value) => {
+        pm.collectionVariables.set(key, value);
+        if (pm.environment.name) {
+          pm.environment.set(key, value);
+        }
+      };
+
+      setVariable("userEmail", email);
+      setVariable("userPassword", password);
+      setVariable("userName", name);
+      setVariable("orgName", orgName);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 201 || pm.response.code === 200) {
+        const responseBody = pm.response.json();
+        const authData = responseBody.data || responseBody;
+        const setVariable = (key, value) => {
+          pm.collectionVariables.set(key, value);
+          if (pm.environment.name) {
+            pm.environment.set(key, value);
+          }
+        };
+
+        if (authData.token) {
+          setVariable("authToken", authData.token);
+        }
+        if (authData.userId) {
+          setVariable("userId", authData.userId);
+        }
+        if (authData.organizationId) {
+          setVariable("organizationId", authData.organizationId);
+        }
+      }
+    language: text/javascript
+body:
+  type: json
+  content: |-
+    {
+      "name": "{{userName}}",
+      "email": "{{userEmail}}",
+      "password": "{{userPassword}}",
+      "organizationName": "{{orgName}}"
+    }

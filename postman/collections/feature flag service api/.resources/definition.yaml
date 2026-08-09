@@ -1,0 +1,14 @@
+$kind: collection
+name: Feature Flag Service API
+description: Self-hosted multi-tenant feature flag platform Management and Evaluation APIs.
+variables:
+  baseUrl: http://localhost:8080
+  authToken: ""
+  userEmail: ""
+  userPassword: ""
+  userName: ""
+  orgName: ""
+  envKey: env_prod_7a91
+  envApiKey: ff_prod_secret_key
+  userId: ""
+  organizationId: ""

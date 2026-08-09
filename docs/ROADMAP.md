@@ -37,8 +37,8 @@ These may become extensions later, but only once the core system is stable and a
 
 
 ### Phase 2 — Authentication & Authorization
-- [ ] Registration → auto-create organization → ADMIN membership
-- [ ] Login → JWT issuance
+- [x] Registration → auto-create organization → ADMIN membership
+- [x] Login → JWT issuance
 - [ ] Organization context on every management request
 - [ ] Tenant isolation enforced at repository layer
 - [ ] ADMIN/MEMBER authorization

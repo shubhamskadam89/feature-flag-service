@@ -1,0 +1,35 @@
+name: Globals
+values:
+  - key: baseUrl
+    value: 'http://localhost:8080'
+    enabled: true
+  - key: apiPrefix
+    value: /api/v1
+    enabled: true
+  - key: authToken
+    value: ''
+    enabled: true
+  - key: userEmail
+    value: ''
+    enabled: true
+  - key: userPassword
+    value: ''
+    enabled: true
+  - key: userName
+    value: ''
+    enabled: true
+  - key: orgName
+    value: ''
+    enabled: true
+  - key: userId
+    value: ''
+    enabled: true
+  - key: organizationId
+    value: ''
+    enabled: true
+  - key: envKey
+    value: env_prod_7a91
+    enabled: true
+  - key: envApiKey
+    value: ff_prod_secret_key
+    enabled: true
