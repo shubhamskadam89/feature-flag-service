@@ -1,11 +1,10 @@
 package com.shubhamkadam.feature_flag_service.security;
 
-import org.springframework.stereotype.Component;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import org.springframework.stereotype.Component;
 
 @Component
 public class ApiKeyGenerator {
@@ -19,16 +18,16 @@ public class ApiKeyGenerator {
         if (sanitizedName.length() > 10) {
             sanitizedName = sanitizedName.substring(0, 10);
         }
-        
+
         String prefix = "env_" + sanitizedName + "_";
-        
+
         byte[] randomBytes = new byte[KEY_LENGTH_BYTES];
         secureRandom.nextBytes(randomBytes);
         String randomSuffix = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-        
+
         String plaintextKey = prefix + randomSuffix;
         String hash = hashApiKey(plaintextKey);
-        
+
         return new ApiKeyResult(plaintextKey, prefix, hash);
     }
 
@@ -43,6 +42,7 @@ public class ApiKeyGenerator {
     }
 
     public static class ApiKeyResult {
+
         private final String plaintextKey;
         private final String prefix;
         private final String hash;

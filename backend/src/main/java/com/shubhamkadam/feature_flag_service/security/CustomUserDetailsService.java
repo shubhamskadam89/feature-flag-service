@@ -18,10 +18,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         log.debug("Loading user details for username/email: {}", username);
-        return userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(username)
-                .orElseThrow(() -> {
-                    log.warn("User not found with email: {}", username);
-                    return new UsernameNotFoundException("User not found with email: " + username);
-                });
+        return userRepository
+            .findByEmailIgnoreCaseAndDeletedAtIsNull(username)
+            .orElseThrow(() -> {
+                log.warn("User not found with email: {}", username);
+                return new UsernameNotFoundException("User not found with email: " + username);
+            });
     }
 }
