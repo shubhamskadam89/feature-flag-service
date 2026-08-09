@@ -22,5 +22,13 @@ values:
     value: env_prod_7a91
   - key: envApiKey
     value: ff_prod_secret_key
+  - key: tempOrgName
+    value: ''
+  - key: tempUpdatedOrgName
+    value: ''
   - key: projectName
+    value: ''
+  - key: tempEnvName
+    value: ''
+  - key: tempUpdatedEnvName
     value: ''

@@ -12,4 +12,8 @@ variables:
   envApiKey: ff_prod_secret_key
   userId: ""
   organizationId: ""
+  tempOrgName: ""
+  tempUpdatedOrgName: ""
   projectName: ""
+  tempEnvName: ""
+  tempUpdatedEnvName: ""

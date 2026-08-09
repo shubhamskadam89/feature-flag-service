@@ -21,4 +21,8 @@ public interface EnvironmentRepository extends JpaRepository<Environment, UUID> 
     Optional<Environment> findByIdAndOrganizationIdAndDeletedAtIsNull(UUID id, UUID organizationId);
 
     List<Environment> findByProjectIdAndOrganizationIdAndDeletedAtIsNull(UUID projectId, UUID organizationId);
+
+    Optional<Environment> findByIdAndProjectIdAndOrganizationIdAndDeletedAtIsNull(UUID id, UUID projectId, UUID organizationId);
+
+    boolean existsByNameAndProjectIdAndOrganizationIdAndDeletedAtIsNull(String name, UUID projectId, UUID organizationId);
 }

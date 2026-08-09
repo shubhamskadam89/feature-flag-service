@@ -1,0 +1,26 @@
+$kind: http-request
+name: Rotate Environment API Key
+method: POST
+url: "{{baseUrl}}{{apiPrefix}}/projects/{{projectId}}/environments/{{environmentId}}/rotate-key"
+order: 5000
+headers:
+  Authorization: Bearer {{authToken}}
+  organization-id: "{{organizationId}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      if (pm.response.code === 200) {
+        const responseBody = pm.response.json();
+        const data = responseBody.data;
+        const setVariable = (key, value) => {
+          pm.collectionVariables.set(key, value);
+          if (pm.environment.name) {
+            pm.environment.set(key, value);
+          }
+        };
+
+        if (data.plaintextApiKey) {
+          setVariable("environmentApiKey", data.plaintextApiKey);
+        }
+      }
+    language: text/javascript
