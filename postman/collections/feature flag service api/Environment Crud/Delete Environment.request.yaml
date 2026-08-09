@@ -1,0 +1,8 @@
+$kind: http-request
+name: Delete Environment
+method: DELETE
+url: "{{baseUrl}}{{apiPrefix}}/projects/{{projectId}}/environments/{{environmentId}}"
+order: 6000
+headers:
+  Authorization: Bearer {{authToken}}
+  organization-id: "{{organizationId}}"

@@ -1,0 +1,8 @@
+$kind: http-request
+name: Get Environment by ID
+method: GET
+url: "{{baseUrl}}{{apiPrefix}}/projects/{{projectId}}/environments/{{environmentId}}"
+order: 3000
+headers:
+  Authorization: Bearer {{authToken}}
+  organization-id: "{{organizationId}}"

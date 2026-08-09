@@ -1,0 +1,27 @@
+$kind: http-request
+name: Update Environment
+method: PATCH
+url: "{{baseUrl}}{{apiPrefix}}/projects/{{projectId}}/environments/{{environmentId}}"
+order: 4000
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{authToken}}
+  organization-id: "{{organizationId}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      const envName = "Env_Updated_" + pm.variables.replaceIn("{{$randomWord}}");
+      const setVariable = (key, value) => {
+        pm.collectionVariables.set(key, value);
+        if (pm.environment.name) {
+          pm.environment.set(key, value);
+        }
+      };
+      setVariable("tempUpdatedEnvName", envName);
+    language: text/javascript
+body:
+  type: json
+  content: |-
+    {
+      "name": "{{tempUpdatedEnvName}}"
+    }
