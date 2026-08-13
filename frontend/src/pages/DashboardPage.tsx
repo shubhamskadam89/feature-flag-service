@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FlagAdminPanel } from '../components/FlagAdminPanel';
 import { LogOut, Layout, Terminal, Database, ShieldCheck } from 'lucide-react';
@@ -9,24 +9,20 @@ interface UserData {
 }
 
 export const DashboardPage: React.FC = () => {
-  const [user, setUser] = useState<UserData | null>(null);
-  const [flagEnabled, setFlagEnabled] = useState(true);
-  const [rolloutPercent, setRolloutPercent] = useState(75);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Load authenticated user info from localStorage
+  const [user] = useState<UserData | null>(() => {
     const savedUserStr = localStorage.getItem('user');
     if (savedUserStr) {
       try {
-        setUser(JSON.parse(savedUserStr));
-      } catch (e) {
-        setUser({ name: 'Developer User', email: 'dev@flags.dev' });
+        return JSON.parse(savedUserStr);
+      } catch {
+        return { name: 'Developer User', email: 'dev@flags.dev' };
       }
-    } else {
-      setUser({ name: 'Developer User', email: 'dev@flags.dev' });
     }
-  }, []);
+    return { name: 'Developer User', email: 'dev@flags.dev' };
+  });
+  const [flagEnabled, setFlagEnabled] = useState(true);
+  const [rolloutPercent, setRolloutPercent] = useState(75);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     // Clear all client auth state

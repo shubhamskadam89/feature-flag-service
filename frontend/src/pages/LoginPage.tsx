@@ -29,8 +29,9 @@ export const LoginPage: React.FC = () => {
       localStorage.setItem('user', JSON.stringify(res.data.user));
       // Redirect to landing or admin console dashboard (route /)
       navigate('/');
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred. Please try again.');
+    } catch (err) {
+      const error = err as { message?: string };
+      setError(error.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
