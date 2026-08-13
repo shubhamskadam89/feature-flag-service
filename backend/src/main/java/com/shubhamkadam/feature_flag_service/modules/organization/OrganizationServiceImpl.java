@@ -30,9 +30,9 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Transactional
     public OrganizationResponseDto createOrg(OrganizationRequestDto requestDto) {
         log.info("Creating organization with name: {}", requestDto.name());
-        
+
         User currentUser = jwtService.getCurrentlyAuthenticatedUser();
-        
+
         if (organizationRepository.findByName(requestDto.name()).isPresent()) {
             log.warn("Organization with name {} already exists", requestDto.name());
             throw new ResourceAlreadyExistsException("Organization", "name", requestDto.name());
@@ -41,14 +41,14 @@ public class OrganizationServiceImpl implements OrganizationService {
         Organization organization = organizationMapper.toEntity(requestDto);
         organization.setCreatedBy(currentUser.getId());
         Organization savedOrganization = organizationRepository.save(organization);
-        
+
         log.debug("Assigning current user as ADMIN to the newly created organization: {}", savedOrganization.getId());
         Membership membership = Membership.builder()
-                .id(new MembershipId(savedOrganization.getId(), currentUser.getId()))
-                .organization(savedOrganization)
-                .user(currentUser)
-                .role(MembershipRole.ADMIN)
-                .build();
+            .id(new MembershipId(savedOrganization.getId(), currentUser.getId()))
+            .organization(savedOrganization)
+            .user(currentUser)
+            .role(MembershipRole.ADMIN)
+            .build();
         membershipRepository.save(membership);
 
         log.info("Organization created successfully with ID: {}", savedOrganization.getId());
@@ -60,26 +60,28 @@ public class OrganizationServiceImpl implements OrganizationService {
     public List<OrganizationResponseDto> getAllOrganizationsForUser() {
         User currentUser = jwtService.getCurrentlyAuthenticatedUser();
         log.info("Fetching all organizations for user ID: {}", currentUser.getId());
-        
+
         List<Membership> memberships = membershipRepository.findByIdUserId(currentUser.getId());
-        
-        return memberships.stream()
-                .map(Membership::getOrganization)
-                .filter(org -> org.getDeletedAt() == null)
-                .map(organizationMapper::toDto)
-                .toList();
+
+        return memberships
+            .stream()
+            .map(Membership::getOrganization)
+            .filter(org -> org.getDeletedAt() == null)
+            .map(organizationMapper::toDto)
+            .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public OrganizationResponseDto getOrganizationById(UUID orgId) {
         log.info("Fetching organization with ID: {}", orgId);
-        
-        Organization organization = organizationRepository.findByIdAndDeletedAtIsNull(orgId)
-                .orElseThrow(() -> {
-                    log.error("Organization with ID {} not found", orgId);
-                    return new ResourceNotFoundException("Organization", "id", orgId.toString());
-                });
+
+        Organization organization = organizationRepository
+            .findByIdAndDeletedAtIsNull(orgId)
+            .orElseThrow(() -> {
+                log.error("Organization with ID {} not found", orgId);
+                return new ResourceNotFoundException("Organization", "id", orgId.toString());
+            });
 
         return organizationMapper.toDto(organization);
     }
@@ -88,22 +90,25 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Transactional
     public OrganizationResponseDto updateOrganization(UUID orgId, OrganizationRequestDto requestDto) {
         log.info("Updating organization with ID: {}", orgId);
-        
-        Organization organization = organizationRepository.findByIdAndDeletedAtIsNull(orgId)
-                .orElseThrow(() -> {
-                    log.error("Organization with ID {} not found for update", orgId);
-                    return new ResourceNotFoundException("Organization", "id", orgId.toString());
-                });
 
-        if (!organization.getName().equals(requestDto.name()) && 
-            organizationRepository.findByName(requestDto.name()).isPresent()) {
+        Organization organization = organizationRepository
+            .findByIdAndDeletedAtIsNull(orgId)
+            .orElseThrow(() -> {
+                log.error("Organization with ID {} not found for update", orgId);
+                return new ResourceNotFoundException("Organization", "id", orgId.toString());
+            });
+
+        if (
+            !organization.getName().equals(requestDto.name()) &&
+            organizationRepository.findByName(requestDto.name()).isPresent()
+        ) {
             log.warn("Cannot update organization {}: name {} already exists", orgId, requestDto.name());
             throw new ResourceAlreadyExistsException("Organization", "name", requestDto.name());
         }
 
         organization.setName(requestDto.name());
         Organization updatedOrganization = organizationRepository.save(organization);
-        
+
         log.info("Organization with ID {} updated successfully", orgId);
         return organizationMapper.toDto(updatedOrganization);
     }
@@ -112,16 +117,17 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Transactional
     public OrganizationResponseDto softDeleteOrganization(UUID orgId) {
         log.info("Soft deleting organization with ID: {}", orgId);
-        
-        Organization organization = organizationRepository.findByIdAndDeletedAtIsNull(orgId)
-                .orElseThrow(() -> {
-                    log.error("Organization with ID {} not found for deletion", orgId);
-                    return new ResourceNotFoundException("Organization", "id", orgId.toString());
-                });
+
+        Organization organization = organizationRepository
+            .findByIdAndDeletedAtIsNull(orgId)
+            .orElseThrow(() -> {
+                log.error("Organization with ID {} not found for deletion", orgId);
+                return new ResourceNotFoundException("Organization", "id", orgId.toString());
+            });
 
         organization.setDeletedAt(OffsetDateTime.now());
         Organization deletedOrganization = organizationRepository.save(organization);
-        
+
         log.info("Organization with ID {} soft deleted successfully", orgId);
         return organizationMapper.toDto(deletedOrganization);
     }

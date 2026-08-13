@@ -28,7 +28,7 @@ public class Organization {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "name", nullable = false, length = 100,unique = true)
+    @Column(name = "name", nullable = false, length = 100, unique = true)
     private String name;
 
     @Column(name = "created_at", nullable = false, updatable = false)

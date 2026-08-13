@@ -36,7 +36,6 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         log.info("Attempting to register user with email: {}", request.getEmail());
@@ -52,7 +51,6 @@ public class AuthService {
             .passwordHash(passwordEncoder.encode(request.getPassword()))
             .build();
         userRepository.save(user);
-
 
         log.debug("Successfully created user {} ", user.getId());
 

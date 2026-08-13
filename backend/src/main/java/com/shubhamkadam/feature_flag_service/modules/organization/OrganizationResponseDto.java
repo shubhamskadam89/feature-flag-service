@@ -4,10 +4,9 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record OrganizationResponseDto(
-        UUID id,
-        String name,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt,
-        UUID createdBy
-) {
-}
+    UUID id,
+    String name,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt,
+    UUID createdBy
+) {}

@@ -26,46 +26,58 @@ public class OrganizationController {
 
     private final OrganizationService organizationService;
 
-    @Operation(summary = "Create a new organization", description = "Creates a new organization for the authenticated user")
+    @Operation(
+        summary = "Create a new organization",
+        description = "Creates a new organization for the authenticated user"
+    )
     @ApiResponses(
         value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
                 description = "Organization created successfully",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrganizationResponseDto.class))
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = OrganizationResponseDto.class)
+                )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "400",
                 description = "Invalid request format",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
-            )
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+                )
+            ),
         }
     )
     @PostMapping("")
     public ResponseEntity<ApiResponse<OrganizationResponseDto>> createOrganization(
-            @Valid @RequestBody OrganizationRequestDto requestDto,
-            HttpServletRequest request
-    ){
+        @Valid @RequestBody OrganizationRequestDto requestDto,
+        HttpServletRequest request
+    ) {
         log.info("Creating organization");
         OrganizationResponseDto responseDto = organizationService.createOrg(requestDto);
 
         ApiResponse<OrganizationResponseDto> response = ApiResponse.success(
-                HttpStatus.OK.value(),
-                "Organization created successfully",
-                responseDto,
-                request.getRequestURI()
+            HttpStatus.OK.value(),
+            "Organization created successfully",
+            responseDto,
+            request.getRequestURI()
         );
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Get all organizations", description = "Retrieves all organizations that the current user belongs to")
+    @Operation(
+        summary = "Get all organizations",
+        description = "Retrieves all organizations that the current user belongs to"
+    )
     @ApiResponses(
         value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
                 description = "Successfully retrieved organizations",
                 content = @Content(mediaType = "application/json")
-            )
+            ),
         }
     )
     @GetMapping("")
@@ -89,13 +101,19 @@ public class OrganizationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
                 description = "Successfully retrieved organization",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrganizationResponseDto.class))
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = OrganizationResponseDto.class)
+                )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "404",
                 description = "Organization not found",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
-            )
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+                )
+            ),
         }
     )
     @GetMapping("/{orgId}")
@@ -120,18 +138,27 @@ public class OrganizationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
                 description = "Organization updated successfully",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrganizationResponseDto.class))
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = OrganizationResponseDto.class)
+                )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "404",
                 description = "Organization not found",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+                )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "400",
                 description = "Invalid request format",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
-            )
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+                )
+            ),
         }
     )
     @PatchMapping("/{orgId}")
@@ -161,8 +188,11 @@ public class OrganizationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "404",
                 description = "Organization not found",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
-            )
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+                )
+            ),
         }
     )
     @DeleteMapping("/{orgId}")

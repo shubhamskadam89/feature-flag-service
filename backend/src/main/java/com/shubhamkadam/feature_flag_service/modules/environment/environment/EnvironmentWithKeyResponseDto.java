@@ -4,11 +4,11 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record EnvironmentWithKeyResponseDto(
-        UUID id,
-        UUID projectId,
-        String name,
-        String apiKeyPrefix,
-        String plaintextApiKey,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+    UUID id,
+    UUID projectId,
+    String name,
+    String apiKeyPrefix,
+    String plaintextApiKey,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt
 ) {}

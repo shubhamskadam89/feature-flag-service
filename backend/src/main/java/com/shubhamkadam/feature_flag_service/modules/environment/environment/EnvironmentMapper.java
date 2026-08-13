@@ -10,12 +10,12 @@ public class EnvironmentMapper {
             return null;
         }
         return new EnvironmentResponseDto(
-                environment.getId(),
-                environment.getProject().getId(),
-                environment.getName(),
-                environment.getApiKeyPrefix(),
-                environment.getCreatedAt(),
-                environment.getUpdatedAt()
+            environment.getId(),
+            environment.getProject().getId(),
+            environment.getName(),
+            environment.getApiKeyPrefix(),
+            environment.getCreatedAt(),
+            environment.getUpdatedAt()
         );
     }
 
@@ -24,13 +24,13 @@ public class EnvironmentMapper {
             return null;
         }
         return new EnvironmentWithKeyResponseDto(
-                environment.getId(),
-                environment.getProject().getId(),
-                environment.getName(),
-                environment.getApiKeyPrefix(),
-                plaintextApiKey,
-                environment.getCreatedAt(),
-                environment.getUpdatedAt()
+            environment.getId(),
+            environment.getProject().getId(),
+            environment.getName(),
+            environment.getApiKeyPrefix(),
+            plaintextApiKey,
+            environment.getCreatedAt(),
+            environment.getUpdatedAt()
         );
     }
 }
