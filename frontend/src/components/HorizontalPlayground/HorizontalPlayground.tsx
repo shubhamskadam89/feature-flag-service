@@ -100,6 +100,7 @@ export const HorizontalPlayground: React.FC = () => {
 
   // Auto-sync flag state to slide
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (isManualOverride) return;
     switch (activeSlide) {
       case 0: setFlagEnabled(true);  setRolloutPercent(100); break;
@@ -107,6 +108,7 @@ export const HorizontalPlayground: React.FC = () => {
       case 2: setFlagEnabled(true);  setRolloutPercent(25);  break;
       default: setFlagEnabled(true); setRolloutPercent(100); break;
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [activeSlide, isManualOverride]);
 
   const goTo = (idx: number) => {
