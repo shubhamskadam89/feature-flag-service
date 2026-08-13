@@ -1,4 +1,4 @@
-package com.shubhamkadam.feature_flag_service.modules.environment.environment;
+package com.shubhamkadam.feature_flag_service.modules.environment;
 
 import com.shubhamkadam.feature_flag_service.modules.organization.Organization;
 import com.shubhamkadam.feature_flag_service.modules.project.Project;

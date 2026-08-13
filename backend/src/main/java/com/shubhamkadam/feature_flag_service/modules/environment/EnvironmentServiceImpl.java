@@ -1,4 +1,4 @@
-package com.shubhamkadam.feature_flag_service.modules.environment.environment;
+package com.shubhamkadam.feature_flag_service.modules.environment;
 
 import com.shubhamkadam.feature_flag_service.exceptions.ForbiddenException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceAlreadyExistsException;
@@ -8,15 +8,14 @@ import com.shubhamkadam.feature_flag_service.modules.project.Project;
 import com.shubhamkadam.feature_flag_service.modules.project.ProjectRepository;
 import com.shubhamkadam.feature_flag_service.security.ApiKeyGenerator;
 import com.shubhamkadam.feature_flag_service.security.OrganizationContextHolder;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -45,8 +44,9 @@ public class EnvironmentServiceImpl implements EnvironmentService {
     }
 
     private Project getProjectAndVerify(UUID projectId) {
-        return projectRepository.findByIdAndOrganizationIdAndDeletedAtIsNull(projectId, getOrganizationId())
-                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
+        return projectRepository
+            .findByIdAndOrganizationIdAndDeletedAtIsNull(projectId, getOrganizationId())
+            .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId.toString()));
     }
 
     @Override
@@ -55,23 +55,28 @@ public class EnvironmentServiceImpl implements EnvironmentService {
         enforceAdminRole();
         Project project = getProjectAndVerify(projectId);
 
-        if (environmentRepository.existsByNameAndProjectIdAndOrganizationIdAndDeletedAtIsNull(
-                requestDto.name(), projectId, getOrganizationId())) {
+        if (
+            environmentRepository.existsByNameAndProjectIdAndOrganizationIdAndDeletedAtIsNull(
+                requestDto.name(),
+                projectId,
+                getOrganizationId()
+            )
+        ) {
             throw new ResourceAlreadyExistsException("Environment", "name", requestDto.name());
         }
 
         ApiKeyGenerator.ApiKeyResult apiKeyResult = apiKeyGenerator.generateApiKey(requestDto.name());
 
         Environment environment = Environment.builder()
-                .project(project)
-                .organization(project.getOrganization())
-                .name(requestDto.name())
-                .apiKeyPrefix(apiKeyResult.getPrefix())
-                .apiKeyHash(apiKeyResult.getHash())
-                .build();
+            .project(project)
+            .organization(project.getOrganization())
+            .name(requestDto.name())
+            .apiKeyPrefix(apiKeyResult.getPrefix())
+            .apiKeyHash(apiKeyResult.getHash())
+            .build();
 
         Environment savedEnvironment = environmentRepository.save(environment);
-        
+
         log.info("Created environment {} in project {}", savedEnvironment.getId(), projectId);
 
         return environmentMapper.toWithKeyDto(savedEnvironment, apiKeyResult.getPlaintextKey());
@@ -81,32 +86,42 @@ public class EnvironmentServiceImpl implements EnvironmentService {
     @Transactional(readOnly = true)
     public List<EnvironmentResponseDto> getEnvironments(UUID projectId) {
         getProjectAndVerify(projectId);
-        return environmentRepository.findByProjectIdAndOrganizationIdAndDeletedAtIsNull(projectId, getOrganizationId())
-                .stream()
-                .map(environmentMapper::toDto)
-                .collect(Collectors.toList());
+        return environmentRepository
+            .findByProjectIdAndOrganizationIdAndDeletedAtIsNull(projectId, getOrganizationId())
+            .stream()
+            .map(environmentMapper::toDto)
+            .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public EnvironmentResponseDto getEnvironmentById(UUID projectId, UUID environmentId) {
-        Environment environment = environmentRepository.findByIdAndProjectIdAndOrganizationIdAndDeletedAtIsNull(
-                environmentId, projectId, getOrganizationId()
-        ).orElseThrow(() -> new ResourceNotFoundException("Environment", "id", environmentId.toString()));
+        Environment environment = environmentRepository
+            .findByIdAndProjectIdAndOrganizationIdAndDeletedAtIsNull(environmentId, projectId, getOrganizationId())
+            .orElseThrow(() -> new ResourceNotFoundException("Environment", "id", environmentId.toString()));
         return environmentMapper.toDto(environment);
     }
 
     @Override
     @Transactional
-    public EnvironmentResponseDto updateEnvironment(UUID projectId, UUID environmentId, EnvironmentRequestDto requestDto) {
+    public EnvironmentResponseDto updateEnvironment(
+        UUID projectId,
+        UUID environmentId,
+        EnvironmentRequestDto requestDto
+    ) {
         enforceAdminRole();
-        Environment environment = environmentRepository.findByIdAndProjectIdAndOrganizationIdAndDeletedAtIsNull(
-                environmentId, projectId, getOrganizationId()
-        ).orElseThrow(() -> new ResourceNotFoundException("Environment", "id", environmentId.toString()));
+        Environment environment = environmentRepository
+            .findByIdAndProjectIdAndOrganizationIdAndDeletedAtIsNull(environmentId, projectId, getOrganizationId())
+            .orElseThrow(() -> new ResourceNotFoundException("Environment", "id", environmentId.toString()));
 
-        if (!environment.getName().equals(requestDto.name()) &&
-                environmentRepository.existsByNameAndProjectIdAndOrganizationIdAndDeletedAtIsNull(
-                        requestDto.name(), projectId, getOrganizationId())) {
+        if (
+            !environment.getName().equals(requestDto.name()) &&
+            environmentRepository.existsByNameAndProjectIdAndOrganizationIdAndDeletedAtIsNull(
+                requestDto.name(),
+                projectId,
+                getOrganizationId()
+            )
+        ) {
             throw new ResourceAlreadyExistsException("Environment", "name", requestDto.name());
         }
 
@@ -120,9 +135,9 @@ public class EnvironmentServiceImpl implements EnvironmentService {
     @Transactional
     public EnvironmentResponseDto softDeleteEnvironment(UUID projectId, UUID environmentId) {
         enforceAdminRole();
-        Environment environment = environmentRepository.findByIdAndProjectIdAndOrganizationIdAndDeletedAtIsNull(
-                environmentId, projectId, getOrganizationId()
-        ).orElseThrow(() -> new ResourceNotFoundException("Environment", "id", environmentId.toString()));
+        Environment environment = environmentRepository
+            .findByIdAndProjectIdAndOrganizationIdAndDeletedAtIsNull(environmentId, projectId, getOrganizationId())
+            .orElseThrow(() -> new ResourceNotFoundException("Environment", "id", environmentId.toString()));
 
         environment.setDeletedAt(OffsetDateTime.now());
         Environment savedEnvironment = environmentRepository.save(environment);
@@ -134,15 +149,15 @@ public class EnvironmentServiceImpl implements EnvironmentService {
     @Transactional
     public EnvironmentWithKeyResponseDto rotateApiKey(UUID projectId, UUID environmentId) {
         enforceAdminRole();
-        Environment environment = environmentRepository.findByIdAndProjectIdAndOrganizationIdAndDeletedAtIsNull(
-                environmentId, projectId, getOrganizationId()
-        ).orElseThrow(() -> new ResourceNotFoundException("Environment", "id", environmentId.toString()));
+        Environment environment = environmentRepository
+            .findByIdAndProjectIdAndOrganizationIdAndDeletedAtIsNull(environmentId, projectId, getOrganizationId())
+            .orElseThrow(() -> new ResourceNotFoundException("Environment", "id", environmentId.toString()));
 
         ApiKeyGenerator.ApiKeyResult newApiKeyResult = apiKeyGenerator.generateApiKey(environment.getName());
-        
+
         environment.setApiKeyPrefix(newApiKeyResult.getPrefix());
         environment.setApiKeyHash(newApiKeyResult.getHash());
-        
+
         Environment savedEnvironment = environmentRepository.save(environment);
         log.info("Rotated API key for environment {} in project {}", environmentId, projectId);
 

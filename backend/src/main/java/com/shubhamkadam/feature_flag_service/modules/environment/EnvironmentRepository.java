@@ -1,4 +1,4 @@
-package com.shubhamkadam.feature_flag_service.modules.environment.environment;
+package com.shubhamkadam.feature_flag_service.modules.environment;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,7 +22,15 @@ public interface EnvironmentRepository extends JpaRepository<Environment, UUID> 
 
     List<Environment> findByProjectIdAndOrganizationIdAndDeletedAtIsNull(UUID projectId, UUID organizationId);
 
-    Optional<Environment> findByIdAndProjectIdAndOrganizationIdAndDeletedAtIsNull(UUID id, UUID projectId, UUID organizationId);
+    Optional<Environment> findByIdAndProjectIdAndOrganizationIdAndDeletedAtIsNull(
+        UUID id,
+        UUID projectId,
+        UUID organizationId
+    );
 
-    boolean existsByNameAndProjectIdAndOrganizationIdAndDeletedAtIsNull(String name, UUID projectId, UUID organizationId);
+    boolean existsByNameAndProjectIdAndOrganizationIdAndDeletedAtIsNull(
+        String name,
+        UUID projectId,
+        UUID organizationId
+    );
 }

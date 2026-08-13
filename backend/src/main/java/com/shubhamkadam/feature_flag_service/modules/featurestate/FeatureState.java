@@ -1,6 +1,6 @@
 package com.shubhamkadam.feature_flag_service.modules.featurestate;
 
-import com.shubhamkadam.feature_flag_service.modules.environment.environment.Environment;
+import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.feature.Feature;
 import com.shubhamkadam.feature_flag_service.modules.organization.Organization;
 import com.shubhamkadam.feature_flag_service.modules.user.User;
@@ -22,6 +22,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "feature_states")
@@ -51,6 +53,7 @@ public class FeatureState {
     @Column(name = "enabled", nullable = false)
     private Boolean enabled = false;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "value", columnDefinition = "jsonb")
     private String value;
 

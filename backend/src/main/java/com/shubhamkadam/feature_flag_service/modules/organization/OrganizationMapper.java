@@ -10,9 +10,7 @@ public class OrganizationMapper {
             return null;
         }
 
-        return Organization.builder()
-                .name(requestDto.name())
-                .build();
+        return Organization.builder().name(requestDto.name()).build();
     }
 
     public OrganizationResponseDto toDto(Organization organization) {
@@ -21,11 +19,11 @@ public class OrganizationMapper {
         }
 
         return new OrganizationResponseDto(
-                organization.getId(),
-                organization.getName(),
-                organization.getCreatedAt(),
-                organization.getUpdatedAt(),
-                organization.getCreatedBy()
+            organization.getId(),
+            organization.getName(),
+            organization.getCreatedAt(),
+            organization.getUpdatedAt(),
+            organization.getCreatedBy()
         );
     }
 }

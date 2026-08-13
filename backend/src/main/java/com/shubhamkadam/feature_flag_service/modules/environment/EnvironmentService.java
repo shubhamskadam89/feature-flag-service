@@ -1,10 +1,9 @@
-package com.shubhamkadam.feature_flag_service.modules.environment.environment;
+package com.shubhamkadam.feature_flag_service.modules.environment;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface EnvironmentService {
-
     EnvironmentWithKeyResponseDto createEnvironment(UUID projectId, EnvironmentRequestDto requestDto);
 
     List<EnvironmentResponseDto> getEnvironments(UUID projectId);
