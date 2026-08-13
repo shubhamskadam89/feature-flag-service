@@ -1,18 +1,12 @@
+import { Routes, Route } from 'react-router-dom';
+import { LandingPage } from './pages/LandingPage';
 
-
-import './App.css'
-
-function App() {
-
-
+export function App() {
   return (
-    <>
-      <div className='w-screen h-screen bg-black flex justify-center items-center'>
-        <h1 className='text-6xl text-white font-bold underline'>Feature-Flag-Service</h1>
-      </div>
-
-    </>
-  )
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+    </Routes>
+  );
 }
 
-export default App
+export default App;
