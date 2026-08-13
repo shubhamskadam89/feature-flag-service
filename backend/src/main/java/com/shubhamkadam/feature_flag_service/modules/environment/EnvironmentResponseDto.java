@@ -1,14 +1,13 @@
-package com.shubhamkadam.feature_flag_service.modules.environment.environment;
+package com.shubhamkadam.feature_flag_service.modules.environment;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public record EnvironmentWithKeyResponseDto(
+public record EnvironmentResponseDto(
     UUID id,
     UUID projectId,
     String name,
     String apiKeyPrefix,
-    String plaintextApiKey,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt
 ) {}

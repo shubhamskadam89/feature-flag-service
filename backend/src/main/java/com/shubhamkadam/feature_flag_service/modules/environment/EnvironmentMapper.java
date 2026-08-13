@@ -1,4 +1,4 @@
-package com.shubhamkadam.feature_flag_service.modules.environment.environment;
+package com.shubhamkadam.feature_flag_service.modules.environment;
 
 import org.springframework.stereotype.Component;
 

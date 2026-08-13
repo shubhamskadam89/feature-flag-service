@@ -1,7 +1,6 @@
-package com.shubhamkadam.feature_flag_service.modules.environment.environment;
+package com.shubhamkadam.feature_flag_service.modules.environment;
 
 import com.shubhamkadam.feature_flag_service.common.ApiResponse;
-import com.shubhamkadam.feature_flag_service.common.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;

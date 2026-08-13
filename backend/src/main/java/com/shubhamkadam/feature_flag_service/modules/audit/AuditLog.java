@@ -1,6 +1,6 @@
 package com.shubhamkadam.feature_flag_service.modules.audit;
 
-import com.shubhamkadam.feature_flag_service.modules.environment.environment.Environment;
+import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.feature.Feature;
 import com.shubhamkadam.feature_flag_service.modules.organization.Organization;
 import com.shubhamkadam.feature_flag_service.modules.user.User;

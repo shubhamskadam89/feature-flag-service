@@ -1,4 +1,4 @@
-package com.shubhamkadam.feature_flag_service.modules.environment.environment;
+package com.shubhamkadam.feature_flag_service.modules.environment;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
