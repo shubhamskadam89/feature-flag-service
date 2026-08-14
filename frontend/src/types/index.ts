@@ -25,3 +25,16 @@ export interface Project {
   featureCount?: number;
   environmentCount?: number;
 }
+
+export interface Environment {
+  id: string;
+  projectId: string;
+  name: string;
+  apiKeyPrefix: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EnvironmentWithKey extends Environment {
+  plaintextApiKey: string;
+}
