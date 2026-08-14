@@ -24,9 +24,15 @@ export const LoginPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await loginApi(email, password);
-      // Save token metadata to local storage
       localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
+      localStorage.setItem('user', JSON.stringify({
+        id: res.data.userId,
+        name: res.data.name,
+        email: res.data.email
+      }));
+      if (res.data.organizationId) {
+        localStorage.setItem('activeOrgId', res.data.organizationId);
+      }
       // Redirect to landing or admin console dashboard (route /)
       navigate('/');
     } catch (err) {

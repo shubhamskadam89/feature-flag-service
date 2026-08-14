@@ -8,5 +8,6 @@ public record OrganizationResponseDto(
     String name,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,
-    UUID createdBy
+    UUID createdBy,
+    String role
 ) {}
