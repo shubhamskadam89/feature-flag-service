@@ -97,6 +97,9 @@ class FeatureStateIntegrationTest {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
+        // Clean up feature states from any prior runs to ensure data isolation
+        featureStateRepository.deleteAll();
+
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
 
         adminUser = userRepository.save(

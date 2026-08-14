@@ -138,17 +138,49 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
+        org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex,
+        HttpServletRequest request
+    ) {
+        log.warn("Method argument type mismatch on request to {}: {}", request.getRequestURI(), ex.getMessage());
+        String message = String.format(
+            "Parameter '%s' should be of type %s",
+            ex.getName(),
+            ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "required type"
+        );
+        if (ex.getRequiredType() == java.util.UUID.class) {
+            message = String.format("Parameter '%s' must be a valid UUID format", ex.getName());
+        }
+        ErrorResponse response = ErrorResponse.builder()
+            .timestamp(Instant.now())
+            .status(HttpStatus.BAD_REQUEST.value())
+            .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+            .message(message)
+            .path(request.getRequestURI())
+            .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
         DataIntegrityViolationException ex,
         HttpServletRequest request
     ) {
         log.error("Data integrity violation at {}: ", request.getRequestURI(), ex);
+
+        String message = "Database constraint violation or conflict occurred";
+        String specificCause = ex.getMostSpecificCause().getMessage();
+        if (specificCause != null && (specificCause.contains("unique") || specificCause.contains("duplicate"))) {
+            message = "A resource with the same key, name, or unique identifier already exists.";
+        }
+
         ErrorResponse response = ErrorResponse.builder()
             .timestamp(Instant.now())
             .status(HttpStatus.CONFLICT.value())
             .error(HttpStatus.CONFLICT.getReasonPhrase())
-            .message("Database constraint violation or conflict occurred")
+            .message(message)
             .path(request.getRequestURI())
             .build();
 

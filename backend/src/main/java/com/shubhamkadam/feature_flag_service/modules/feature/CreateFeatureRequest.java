@@ -18,7 +18,13 @@ public record CreateFeatureRequest(
     @Size(max = 100, message = "Feature name must not exceed 100 characters")
     String name,
 
-    String description,
+    @Size(max = 500, message = "Feature description must not exceed 500 characters") String description,
 
     @NotNull(message = "Feature type is required") FeatureType type
-) {}
+) {
+    public CreateFeatureRequest {
+        if (key != null) key = key.trim();
+        if (name != null) name = name.trim();
+        if (description != null) description = description.trim();
+    }
+}
