@@ -178,10 +178,39 @@ export const EnvironmentListPage: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (isLoading) {
+  if (isLoading && environments.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[250px]">
-        <div className="font-mono text-xs text-[#8d8d8a] animate-pulse">LOADING ENVIRONMENTS...</div>
+      <div className="flex flex-col gap-6">
+        <div className="border-b border-[#131311]/5 pb-5 h-20 animate-pulse bg-[#f3f2ea]/20 rounded-lg"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2].map((n) => (
+            <div key={n} className="bg-white border border-[#131311]/6 p-5 h-44 flex flex-col justify-between animate-pulse rounded-xl">
+              <div className="space-y-2">
+                <div className="w-24 h-5 bg-[#f3f2ea] rounded"></div>
+                <div className="w-16 h-3 bg-[#f3f2ea]/70 rounded"></div>
+              </div>
+              <div className="w-full h-12 bg-[#f3f2ea]/40 rounded mt-4"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error && environments.length === 0 && !isLoading) {
+    return (
+      <div className="border border-red-200 bg-red-50/10 p-12 flex flex-col items-center justify-center min-h-[260px] text-center rounded-xl max-w-2xl mx-auto">
+        <AlertTriangle className="w-10 h-10 text-red-500 mb-3" />
+        <span className="font-mono text-xs uppercase tracking-wider mb-1.5 text-red-700 font-bold">Failed to load environments</span>
+        <p className="text-xs text-red-600 max-w-xs leading-relaxed mb-5 font-sans">
+          {error}
+        </p>
+        <button
+          onClick={fetchProjectAndEnvironments}
+          className="bg-white border border-red-200 text-red-700 hover:bg-red-50 font-mono text-[9px] font-bold py-2 px-3.5 rounded-md transition-all shadow-3xs cursor-pointer"
+        >
+          RETRY FETCH
+        </button>
       </div>
     );
   }
