@@ -39,18 +39,18 @@ These may become extensions later, but only once the core system is stable and a
 ### Phase 2 — Authentication & Authorization
 - [x] Registration → auto-create organization → ADMIN membership
 - [x] Login → JWT issuance
-- [ ] Organization context on every management request
-- [ ] Tenant isolation enforced at repository layer
-- [ ] ADMIN/MEMBER authorization
-- [ ] Environment API keys (hash + prefix, never plaintext)
+- [x] Organization context on every management request
+- [x] Tenant isolation enforced at repository layer
+- [x] ADMIN/MEMBER authorization
+- [x] Environment API keys (hash + prefix, never plaintext)
 
 ### Phase 3 — Feature Management
-- [ ] Project CRUD
-- [ ] Environment CRUD
-- [ ] Feature CRUD
-- [ ] Toggle feature state
-- [ ] Validation
-- [ ] Audit events on every mutation
+- [x] Project CRUD
+- [x] Environment CRUD
+- [x] Feature CRUD
+- [x] Toggle feature state
+- [x] Validation
+- [x] Audit events on every mutation
 
 ### Phase 4 — Evaluation Engine
 - [ ] Bulk evaluation API
