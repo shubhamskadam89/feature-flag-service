@@ -38,3 +38,25 @@ export interface Environment {
 export interface EnvironmentWithKey extends Environment {
   plaintextApiKey: string;
 }
+
+export type FeatureType = 'BOOLEAN';
+
+export interface Feature {
+  id: string;
+  projectId: string;
+  key: string;
+  name: string;
+  description: string;
+  type: FeatureType;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FeatureState {
+  id: string;
+  featureId: string;
+  environmentId: string;
+  enabled: boolean;
+  updatedBy: string;
+  updatedAt: string;
+}
