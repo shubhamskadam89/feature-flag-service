@@ -1,5 +1,10 @@
 package com.shubhamkadam.feature_flag_service.modules.project;
 
-import lombok.Data;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
-public record ProjectRequestDto(String projectName) {}
+public record ProjectRequestDto(
+    @NotBlank(message = "Project name cannot be blank")
+    @Size(max = 100, message = "Project name must not exceed 100 characters")
+    String projectName
+) {}

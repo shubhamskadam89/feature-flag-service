@@ -2,6 +2,7 @@ package com.shubhamkadam.feature_flag_service.modules.featurestate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shubhamkadam.feature_flag_service.modules.audit.AuditLogRepository;
 import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
 import com.shubhamkadam.feature_flag_service.modules.feature.Feature;
@@ -43,6 +44,9 @@ class FeatureStateConcurrencyTest {
     private FeatureStateRepository featureStateRepository;
 
     @Autowired
+    private AuditLogRepository auditLogRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -68,6 +72,7 @@ class FeatureStateConcurrencyTest {
 
     @BeforeEach
     void setUp() {
+        auditLogRepository.deleteAllInBatch();
         featureStateRepository.deleteAllInBatch();
         featureRepository.deleteAllInBatch();
         environmentRepository.deleteAllInBatch();
@@ -133,6 +138,7 @@ class FeatureStateConcurrencyTest {
 
     @AfterEach
     void tearDown() {
+        auditLogRepository.deleteAllInBatch();
         featureStateRepository.deleteAllInBatch();
         featureRepository.deleteAllInBatch();
         environmentRepository.deleteAllInBatch();

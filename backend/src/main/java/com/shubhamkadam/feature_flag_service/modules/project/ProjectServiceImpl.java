@@ -1,7 +1,10 @@
 package com.shubhamkadam.feature_flag_service.modules.project;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shubhamkadam.feature_flag_service.exceptions.ForbiddenException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundException;
+import com.shubhamkadam.feature_flag_service.modules.audit.AuditAction;
+import com.shubhamkadam.feature_flag_service.modules.audit.AuditLogService;
 import com.shubhamkadam.feature_flag_service.modules.membership.MembershipRole;
 import com.shubhamkadam.feature_flag_service.modules.organization.Organization;
 import com.shubhamkadam.feature_flag_service.modules.organization.OrganizationRepository;
@@ -11,13 +14,14 @@ import com.shubhamkadam.feature_flag_service.security.OrganizationContextHolder;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
@@ -25,8 +29,12 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final JwtService jwtService;
     private final ProjectMapper projectMapper;
+    private final AuditLogService auditLogService;
+    private final ObjectMapper objectMapper = new ObjectMapper()
+        .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
     @Override
+    @Transactional
     public ProjectResponseDto createProjectWithinOrganization(ProjectRequestDto requestDto) {
         log.info("Starting project creation process for project name: {}", requestDto.projectName());
 
@@ -78,11 +86,19 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.save(project);
         log.info("Successfully created project with ID: {}", project.getId());
 
+        try {
+            String newValue = objectMapper.writeValueAsString(java.util.Map.of("name", project.getName()));
+            auditLogService.recordEvent(organization, null, null, user, AuditAction.PROJECT_CREATED, null, newValue);
+        } catch (Exception e) {
+            log.error("Failed to write audit log for project creation", e);
+        }
+
         // 6. Map to DTO and return
         return projectMapper.projectResponseDto(project);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProjectResponseDto> getAllProjectsByOrganization() {
         OrganizationContextHolder.OrganizationContext context = OrganizationContextHolder.getContext();
         log.info("Fetching all projects for organization: {}", context.getOrganizationId());
@@ -95,6 +111,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProjectResponseDto getProjectByIdWithinOrganization(UUID projectId) {
         OrganizationContextHolder.OrganizationContext context = OrganizationContextHolder.getContext();
         log.info("Fetching project with ID: {} for organization: {}", projectId, context.getOrganizationId());
@@ -105,6 +122,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional
     public ProjectResponseDto updateProjectByIdWithinOrganization(ProjectRequestDto requestDto, UUID projectId) {
         OrganizationContextHolder.OrganizationContext context = OrganizationContextHolder.getContext();
         UUID orgId = context.getOrganizationId();
@@ -116,6 +134,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository
             .findByIdAndOrganizationIdAndDeletedAtIsNull(projectId, orgId)
             .orElseThrow(() -> new ResourceNotFoundException("Project not found or you don't have access."));
+        String oldName = project.getName();
         // Check if new name is already taken by another project
         if (!project.getName().equals(requestDto.projectName())) {
             boolean nameTaken = projectRepository.existsByOrganizationIdAndNameAndDeletedAtIsNull(
@@ -134,10 +153,29 @@ public class ProjectServiceImpl implements ProjectService {
         }
         projectRepository.save(project);
         log.info("Successfully updated project with ID: {}", projectId);
+
+        try {
+            String oldValueStr = objectMapper.writeValueAsString(java.util.Map.of("name", oldName));
+            String newValueStr = objectMapper.writeValueAsString(java.util.Map.of("name", project.getName()));
+            User user = jwtService.getCurrentlyAuthenticatedUser();
+            auditLogService.recordEvent(
+                project.getOrganization(),
+                null,
+                null,
+                user,
+                AuditAction.PROJECT_UPDATED,
+                oldValueStr,
+                newValueStr
+            );
+        } catch (Exception e) {
+            log.error("Failed to write audit log for project update", e);
+        }
+
         return projectMapper.projectResponseDto(project);
     }
 
     @Override
+    @Transactional
     public ProjectResponseDto softDeleteProject(UUID projectId) {
         OrganizationContextHolder.OrganizationContext context = OrganizationContextHolder.getContext();
         UUID orgId = context.getOrganizationId();
@@ -154,6 +192,23 @@ public class ProjectServiceImpl implements ProjectService {
 
         projectRepository.save(project);
         log.info("Successfully soft deleted project with ID: {}", projectId);
+
+        try {
+            String oldValueStr = objectMapper.writeValueAsString(java.util.Map.of("name", project.getName()));
+            User user = jwtService.getCurrentlyAuthenticatedUser();
+            auditLogService.recordEvent(
+                project.getOrganization(),
+                null,
+                null,
+                user,
+                AuditAction.PROJECT_DELETED,
+                oldValueStr,
+                null
+            );
+        } catch (Exception e) {
+            log.error("Failed to write audit log for project deletion", e);
+        }
+
         return projectMapper.projectResponseDto(project);
     }
 }

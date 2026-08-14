@@ -1,0 +1,20 @@
+package com.shubhamkadam.feature_flag_service.modules.audit;
+
+public enum AuditAction {
+    PROJECT_CREATED,
+    PROJECT_UPDATED,
+    PROJECT_DELETED,
+
+    ENVIRONMENT_CREATED,
+    ENVIRONMENT_UPDATED,
+    ENVIRONMENT_DELETED,
+
+    API_KEY_CREATED,
+    API_KEY_ROTATED,
+
+    FEATURE_CREATED,
+    FEATURE_UPDATED,
+    FEATURE_DELETED,
+
+    FEATURE_TOGGLED,
+}
