@@ -60,3 +60,26 @@ export interface FeatureState {
   updatedBy: string;
   updatedAt: string;
 }
+
+export interface AuditLog {
+  id: string;
+  organizationId: string;
+  environmentId: string;
+  featureId?: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  action: string;
+  oldValue?: string;
+  newValue?: string;
+  createdAt: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+  empty: boolean;
+}
