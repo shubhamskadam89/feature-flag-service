@@ -19,7 +19,8 @@ import {
 } from 'lucide-react';
 import { getOrganizations, createOrganization, updateOrganization, deleteOrganization } from '../services/organizationService';
 import { getProjects } from '../services/projectService';
-import { type Organization, type Project } from '../types';
+import { getEnvironments } from '../services/environmentService';
+import { type Organization, type Project, type Environment } from '../types';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -50,6 +51,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const projectDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Environment Switcher States
+  const [environmentsList, setEnvironmentsList] = useState<Environment[]>([]);
+  const [activeEnv, setActiveEnv] = useState<Environment | null>(null);
+  const [isEnvDropdownOpen, setIsEnvDropdownOpen] = useState(false);
+  const envDropdownRef = useRef<HTMLDivElement>(null);
   
   // Modals & UI States
   const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
@@ -75,6 +82,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
       }
       if (projectDropdownRef.current && !projectDropdownRef.current.contains(event.target as Node)) {
         setIsProjectDropdownOpen(false);
+      }
+      if (envDropdownRef.current && !envDropdownRef.current.contains(event.target as Node)) {
+        setIsEnvDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -104,14 +114,53 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
     }
   };
 
+  const fetchEnvironments = async (projId: string) => {
+    try {
+      const response = await getEnvironments(projId);
+      if (response.data) {
+        setEnvironmentsList(response.data);
+        if (response.data.length > 0) {
+          const storedEnvId = localStorage.getItem('activeEnvironmentId');
+          const found = response.data.find(e => e.id === storedEnvId) || response.data[0];
+          setActiveEnv(found);
+          localStorage.setItem('activeEnvironmentId', found.id);
+          localStorage.setItem('activeEnvironmentName', found.name);
+        } else {
+          setActiveEnv(null);
+          localStorage.removeItem('activeEnvironmentId');
+          localStorage.removeItem('activeEnvironmentName');
+        }
+        // Dispatch event to let child components know active environment updated
+        window.dispatchEvent(new Event('envChanged'));
+      }
+    } catch (err) {
+      console.error('Failed to load environments in DashboardLayout', err);
+    }
+  };
+
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
     fetchProjects();
+    if (projectId) {
+      fetchEnvironments(projectId);
+    } else {
+      setEnvironmentsList([]);
+      setActiveEnv(null);
+      localStorage.removeItem('activeEnvironmentId');
+      localStorage.removeItem('activeEnvironmentName');
+    }
+
+    const handleRefreshEnvs = () => {
+      if (projectId) fetchEnvironments(projectId);
+    };
+
     window.addEventListener('orgChanged', fetchProjects);
     window.addEventListener('projectChanged', fetchProjects);
+    window.addEventListener('envListChanged', handleRefreshEnvs);
     return () => {
       window.removeEventListener('orgChanged', fetchProjects);
       window.removeEventListener('projectChanged', fetchProjects);
+      window.removeEventListener('envListChanged', handleRefreshEnvs);
     };
   }, [projectId]);
 
@@ -464,6 +513,60 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
                   </div>
                 )}
               </div>
+
+              {/* Breadcrumb separator & environment context switcher */}
+              {projectId && (
+                <>
+                  <span className="text-[#131311]/20 font-sans text-sm select-none">/</span>
+
+                  <div className="relative" ref={envDropdownRef}>
+                    <button
+                      onClick={() => {
+                        if (environmentsList.length > 0) {
+                          setIsEnvDropdownOpen(!isEnvDropdownOpen);
+                        } else {
+                          navigate(`/projects/${projectId}/environments`);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#131311]/12 hover:border-[#131311]/25 text-[#131311] font-semibold text-xs rounded-md shadow-2xs hover:bg-[#fffdf6] transition-colors cursor-pointer"
+                      title="Switch Environment"
+                    >
+                      <span className="max-w-[120px] truncate">{activeEnv?.name || '—'}</span>
+                      <ChevronDown className="w-3 h-3 text-[#8d8d8a]" />
+                    </button>
+
+                    {isEnvDropdownOpen && environmentsList.length > 0 && (
+                      <div className="absolute left-0 mt-1.5 w-60 bg-white border border-[#131311]/12 rounded-lg shadow-lg z-50 overflow-hidden">
+                        <div className="p-2.5 border-b border-[#131311]/6 bg-[#f3f2ea] text-[9px] text-[#8d8d8a] font-bold tracking-wider uppercase font-mono">
+                          Environments
+                        </div>
+                        <div className="max-h-48 overflow-y-auto p-1 flex flex-col gap-0.5">
+                          {environmentsList.map((e) => {
+                            const isActive = e.id === activeEnv?.id;
+                            return (
+                              <button
+                                key={e.id}
+                                onClick={() => {
+                                  setIsEnvDropdownOpen(false);
+                                  setActiveEnv(e);
+                                  localStorage.setItem('activeEnvironmentId', e.id);
+                                  localStorage.setItem('activeEnvironmentName', e.name);
+                                  window.dispatchEvent(new Event('envChanged'));
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between ${
+                                  isActive ? 'text-[#131311] font-bold bg-[#131311]/4' : 'text-[#575755] hover:bg-[#131311]/3'
+                                }`}
+                              >
+                                <span className="text-xs truncate">{e.name}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
