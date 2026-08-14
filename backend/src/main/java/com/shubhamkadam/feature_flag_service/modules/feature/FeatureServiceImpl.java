@@ -1,12 +1,16 @@
 package com.shubhamkadam.feature_flag_service.modules.feature;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shubhamkadam.feature_flag_service.exceptions.BadRequestException;
 import com.shubhamkadam.feature_flag_service.exceptions.ForbiddenException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceAlreadyExistsException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundException;
+import com.shubhamkadam.feature_flag_service.modules.audit.AuditLogService;
 import com.shubhamkadam.feature_flag_service.modules.membership.MembershipRole;
 import com.shubhamkadam.feature_flag_service.modules.project.Project;
 import com.shubhamkadam.feature_flag_service.modules.project.ProjectRepository;
+import com.shubhamkadam.feature_flag_service.modules.user.User;
+import com.shubhamkadam.feature_flag_service.security.JwtService;
 import com.shubhamkadam.feature_flag_service.security.OrganizationContextHolder;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -25,6 +29,10 @@ public class FeatureServiceImpl implements FeatureService {
     private final FeatureRepository featureRepository;
     private final ProjectRepository projectRepository;
     private final FeatureMapper featureMapper;
+    private final JwtService jwtService;
+    private final AuditLogService auditLogService;
+    private final ObjectMapper objectMapper = new ObjectMapper()
+        .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
     private UUID getOrganizationId() {
         UUID organizationId = OrganizationContextHolder.getCurrentOrganizationId();
@@ -90,6 +98,34 @@ public class FeatureServiceImpl implements FeatureService {
             projectId
         );
 
+        try {
+            User user = jwtService.getCurrentlyAuthenticatedUser();
+            String featureJson = objectMapper.writeValueAsString(
+                java.util.Map.of(
+                    "name",
+                    savedFeature.getName(),
+                    "key",
+                    savedFeature.getKey(),
+                    "description",
+                    savedFeature.getDescription() != null ? savedFeature.getDescription() : "",
+                    "type",
+                    savedFeature.getType().name()
+                )
+            );
+
+            auditLogService.recordEvent(
+                savedFeature.getProject().getOrganization(),
+                null,
+                savedFeature,
+                user,
+                com.shubhamkadam.feature_flag_service.modules.audit.AuditAction.FEATURE_CREATED,
+                null,
+                featureJson
+            );
+        } catch (Exception e) {
+            log.error("Failed to write audit log for feature creation", e);
+        }
+
         return featureMapper.toDto(savedFeature);
     }
 
@@ -137,6 +173,9 @@ public class FeatureServiceImpl implements FeatureService {
             throw new BadRequestException("At least one feature field must be provided for update.");
         }
 
+        String oldName = feature.getName();
+        String oldDescription = feature.getDescription() != null ? feature.getDescription() : "";
+
         if (request.name() != null) {
             feature.setName(request.name());
         }
@@ -148,6 +187,32 @@ public class FeatureServiceImpl implements FeatureService {
         Feature savedFeature = featureRepository.save(feature);
 
         log.info("Updated feature {} in project {}", featureId, projectId);
+
+        try {
+            User user = jwtService.getCurrentlyAuthenticatedUser();
+            String oldValue = objectMapper.writeValueAsString(
+                java.util.Map.of("name", oldName, "description", oldDescription)
+            );
+            String newValue = objectMapper.writeValueAsString(
+                java.util.Map.of(
+                    "name",
+                    savedFeature.getName(),
+                    "description",
+                    savedFeature.getDescription() != null ? savedFeature.getDescription() : ""
+                )
+            );
+            auditLogService.recordEvent(
+                savedFeature.getProject().getOrganization(),
+                null,
+                savedFeature,
+                user,
+                com.shubhamkadam.feature_flag_service.modules.audit.AuditAction.FEATURE_UPDATED,
+                oldValue,
+                newValue
+            );
+        } catch (Exception e) {
+            log.error("Failed to write audit log for feature update", e);
+        }
 
         return featureMapper.toDto(savedFeature);
     }
@@ -171,6 +236,24 @@ public class FeatureServiceImpl implements FeatureService {
         Feature savedFeature = featureRepository.save(feature);
 
         log.info("Deleted feature {} from project {}", featureId, projectId);
+
+        try {
+            User user = jwtService.getCurrentlyAuthenticatedUser();
+            String oldValue = objectMapper.writeValueAsString(
+                java.util.Map.of("name", savedFeature.getName(), "key", savedFeature.getKey())
+            );
+            auditLogService.recordEvent(
+                savedFeature.getProject().getOrganization(),
+                null,
+                savedFeature,
+                user,
+                com.shubhamkadam.feature_flag_service.modules.audit.AuditAction.FEATURE_DELETED,
+                oldValue,
+                null
+            );
+        } catch (Exception e) {
+            log.error("Failed to write audit log for feature deletion", e);
+        }
 
         return featureMapper.toDto(savedFeature);
     }

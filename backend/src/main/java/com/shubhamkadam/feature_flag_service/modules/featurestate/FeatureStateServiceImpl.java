@@ -1,7 +1,9 @@
 package com.shubhamkadam.feature_flag_service.modules.featurestate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shubhamkadam.feature_flag_service.exceptions.ForbiddenException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundException;
+import com.shubhamkadam.feature_flag_service.modules.audit.AuditLogService;
 import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
 import com.shubhamkadam.feature_flag_service.modules.feature.Feature;
@@ -27,6 +29,9 @@ public class FeatureStateServiceImpl implements FeatureStateService {
     private final EnvironmentRepository environmentRepository;
     private final JwtService jwtService;
     private final FeatureStateMapper featureStateMapper;
+    private final AuditLogService auditLogService;
+    private final ObjectMapper objectMapper = new ObjectMapper()
+        .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
     private UUID getOrganizationId() {
         UUID organizationId = OrganizationContextHolder.getCurrentOrganizationId();
@@ -89,6 +94,8 @@ public class FeatureStateServiceImpl implements FeatureStateService {
                 organizationId
             );
 
+        Boolean oldEnabled = existingState.map(FeatureState::getEnabled).orElse(null);
+
         FeatureState featureState;
         if (existingState.isPresent()) {
             featureState = existingState.get();
@@ -116,6 +123,27 @@ public class FeatureStateServiceImpl implements FeatureStateService {
             request.enabled(),
             authenticatedUser.getId()
         );
+
+        try {
+            String oldValueStr = oldEnabled == null
+                ? null
+                : objectMapper.writeValueAsString(java.util.Map.of("enabled", oldEnabled));
+            String newValueStr = objectMapper.writeValueAsString(
+                java.util.Map.of("enabled", savedFeatureState.getEnabled())
+            );
+
+            auditLogService.recordEvent(
+                savedFeatureState.getOrganization(),
+                savedFeatureState.getEnvironment(),
+                savedFeatureState.getFeature(),
+                authenticatedUser,
+                com.shubhamkadam.feature_flag_service.modules.audit.AuditAction.FEATURE_TOGGLED,
+                oldValueStr,
+                newValueStr
+            );
+        } catch (Exception e) {
+            log.error("Failed to write audit log for feature toggle", e);
+        }
 
         return featureStateMapper.toResponse(savedFeatureState);
     }
