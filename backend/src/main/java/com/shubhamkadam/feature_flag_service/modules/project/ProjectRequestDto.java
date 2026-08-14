@@ -7,4 +7,10 @@ public record ProjectRequestDto(
     @NotBlank(message = "Project name cannot be blank")
     @Size(max = 100, message = "Project name must not exceed 100 characters")
     String projectName
-) {}
+) {
+    public ProjectRequestDto {
+        if (projectName != null) {
+            projectName = projectName.trim();
+        }
+    }
+}
