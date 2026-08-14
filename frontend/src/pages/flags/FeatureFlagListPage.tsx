@@ -292,8 +292,35 @@ export const FeatureFlagListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Empty State */}
-      {features.length === 0 ? (
+      {/* Main Grid, Loader, Error, or Empty State */}
+      {isLoading && features.length === 0 ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map(n => (
+            <div key={n} className="bg-white border border-[#131311]/6 p-5 h-28 flex items-center justify-between rounded-xl animate-pulse">
+              <div className="space-y-2.5 flex-1">
+                <div className="w-48 h-5 bg-[#f3f2ea] rounded"></div>
+                <div className="w-80 h-3.5 bg-[#f3f2ea]/75 rounded"></div>
+              </div>
+              <div className="w-16 h-8 bg-[#f3f2ea]/40 rounded"></div>
+            </div>
+          ))}
+        </div>
+      ) : error && features.length === 0 ? (
+        /* Error Retry State */
+        <div className="border border-red-200 bg-red-50/10 p-12 flex flex-col items-center justify-center min-h-[260px] text-center rounded-xl max-w-2xl mx-auto w-full">
+          <AlertTriangle className="w-10 h-10 text-red-500 mb-3" />
+          <span className="font-mono text-xs uppercase tracking-wider mb-1.5 text-red-700 font-bold">Failed to load features</span>
+          <p className="text-xs text-red-600 max-w-xs leading-relaxed mb-5 font-sans">
+            {error}
+          </p>
+          <button
+            onClick={loadData}
+            className="bg-white border border-red-200 text-red-700 hover:bg-red-50 font-mono text-[9px] font-bold py-2 px-3.5 rounded-md transition-all shadow-3xs cursor-pointer"
+          >
+            RETRY FETCH
+          </button>
+        </div>
+      ) : features.length === 0 ? (
         <div className="border border-dashed border-[#131311]/12 bg-[#f3f2ea]/10 p-12 flex flex-col items-center justify-center min-h-[260px] text-[#8d8d8a] text-center rounded-xl">
           <Flag className="w-10 h-10 text-[#131311]/15 mb-3" />
           <span className="font-mono text-xs uppercase tracking-wider mb-1.5 text-[#131311] font-bold">No Flags Registered</span>

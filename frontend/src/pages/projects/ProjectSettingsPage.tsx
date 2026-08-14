@@ -17,23 +17,25 @@ export const ProjectSettingsPage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [showConfirmArchive, setShowConfirmArchive] = useState(false);
 
-  useEffect(() => {
-    const fetchProjectDetails = async () => {
-      if (!projectId) return;
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await getProjectByIdWithinOrganization(projectId);
-        if (response.data) {
-          setProject(response.data);
-          setProjectName(response.data.name);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load project details.');
-      } finally {
-        setIsLoading(false);
+  const fetchProjectDetails = async () => {
+    if (!projectId) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await getProjectByIdWithinOrganization(projectId);
+      if (response.data) {
+        setProject(response.data);
+        setProjectName(response.data.name);
       }
-    };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load project details.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
     fetchProjectDetails();
   }, [projectId]);
 
@@ -87,6 +89,24 @@ export const ProjectSettingsPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
         <div className="font-mono text-xs text-[#8d8d8a] animate-pulse">LOADING SETTINGS...</div>
+      </div>
+    );
+  }
+
+  if (error && !project) {
+    return (
+      <div className="border border-red-200 bg-red-50/10 p-12 flex flex-col items-center justify-center min-h-[260px] text-center rounded-xl max-w-2xl">
+        <AlertTriangle className="w-10 h-10 text-red-500 mb-3" />
+        <span className="font-mono text-xs uppercase tracking-wider mb-1.5 text-red-700 font-bold">Failed to load project settings</span>
+        <p className="text-xs text-red-600 max-w-xs leading-relaxed mb-5 font-sans">
+          {error}
+        </p>
+        <button
+          onClick={fetchProjectDetails}
+          className="bg-white border border-red-200 text-red-700 hover:bg-red-50 font-mono text-[9px] font-bold py-2 px-3.5 rounded-md transition-all shadow-3xs cursor-pointer"
+        >
+          RETRY FETCH
+        </button>
       </div>
     );
   }

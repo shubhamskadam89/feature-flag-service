@@ -7,7 +7,8 @@ import {
   Edit3, 
   Trash2, 
   Folder,
-  HelpCircle
+  HelpCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { getProjects, createProject, updateProject, deleteProject } from '../../services/projectService';
 import { getOrganizations } from '../../services/organizationService';
@@ -184,7 +185,7 @@ export const ProjectListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Loading Skeleton */}
+      {/* Main Grid, Loader, Error, or Empty State */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((n) => (
@@ -197,6 +198,21 @@ export const ProjectListPage: React.FC = () => {
               <div className="w-full h-8 bg-[#f3f2ea]/40 rounded mt-5"></div>
             </div>
           ))}
+        </div>
+      ) : error && projects.length === 0 ? (
+        /* Error Retry State */
+        <div className="border border-red-200 bg-red-50/10 p-12 flex flex-col items-center justify-center min-h-[260px] text-[#8d8d8a] text-center rounded-xl">
+          <AlertTriangle className="w-10 h-10 text-red-500 mb-3" />
+          <span className="font-mono text-xs uppercase tracking-wider mb-1.5 text-red-700 font-bold">Failed to load projects</span>
+          <p className="text-xs text-red-600 max-w-xs leading-relaxed mb-5 font-sans">
+            {error}
+          </p>
+          <button
+            onClick={fetchProjectsAndRole}
+            className="bg-white border border-red-200 text-red-700 hover:bg-red-50 font-mono text-[9px] font-bold py-2 px-3.5 rounded-md transition-all shadow-3xs cursor-pointer"
+          >
+            RETRY FETCH
+          </button>
         </div>
       ) : filteredProjects.length === 0 ? (
         /* Empty State */
@@ -212,7 +228,7 @@ export const ProjectListPage: React.FC = () => {
                 setProjectName('');
                 setIsCreateOpen(true);
               }}
-              className="bg-white border border-[#131311]/12 text-[#131311] hover:bg-[#131311] hover:text-[#fffdf6] font-mono text-[9px] font-bold py-2 px-3 rounded-md transition-all shadow-3xs"
+              className="bg-white border border-[#131311]/12 text-[#131311] hover:bg-[#131311] hover:text-[#fffdf6] font-mono text-[9px] font-bold py-2 px-3 rounded-md transition-all shadow-3xs cursor-pointer"
             >
               + ADD NEW PROJECT
             </button>
