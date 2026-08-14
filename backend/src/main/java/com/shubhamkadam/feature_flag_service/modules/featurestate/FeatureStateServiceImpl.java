@@ -13,7 +13,9 @@ import com.shubhamkadam.feature_flag_service.modules.user.User;
 import com.shubhamkadam.feature_flag_service.security.JwtService;
 import com.shubhamkadam.feature_flag_service.security.OrganizationContextHolder;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -146,5 +148,19 @@ public class FeatureStateServiceImpl implements FeatureStateService {
         }
 
         return featureStateMapper.toResponse(savedFeatureState);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FeatureStateResponse> getFeatureStatesByEnvironment(UUID environmentId) {
+        UUID organizationId = getOrganizationId();
+        // verify environment belongs to organization
+        getEnvironment(environmentId, organizationId);
+
+        return featureStateRepository
+            .findByEnvironmentId(environmentId)
+            .stream()
+            .map(featureStateMapper::toResponse)
+            .collect(Collectors.toList());
     }
 }
