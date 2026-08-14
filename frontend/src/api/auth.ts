@@ -2,11 +2,11 @@ import { apiClient, type ApiResponse } from './client';
 
 export interface AuthResponse {
   token: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  userId: string;
+  name: string;
+  email: string;
+  organizationId?: string;
+  organizationName?: string;
 }
 
 export async function loginApi(email: string, password: string): Promise<ApiResponse<AuthResponse>> {

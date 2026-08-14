@@ -31,7 +31,14 @@ export const RegisterPage: React.FC = () => {
       setLoading(true);
       const res = await registerApi(name, email, password);
       localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
+      localStorage.setItem('user', JSON.stringify({
+        id: res.data.userId,
+        name: res.data.name,
+        email: res.data.email
+      }));
+      if (res.data.organizationId) {
+        localStorage.setItem('activeOrgId', res.data.organizationId);
+      }
       navigate('/');
     } catch (err) {
       const error = err as { message?: string };

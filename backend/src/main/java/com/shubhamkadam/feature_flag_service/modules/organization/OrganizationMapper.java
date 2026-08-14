@@ -14,6 +14,13 @@ public class OrganizationMapper {
     }
 
     public OrganizationResponseDto toDto(Organization organization) {
+        return toDto(organization, null);
+    }
+
+    public OrganizationResponseDto toDto(
+        Organization organization,
+        com.shubhamkadam.feature_flag_service.modules.membership.MembershipRole role
+    ) {
         if (organization == null) {
             return null;
         }
@@ -23,7 +30,8 @@ public class OrganizationMapper {
             organization.getName(),
             organization.getCreatedAt(),
             organization.getUpdatedAt(),
-            organization.getCreatedBy()
+            organization.getCreatedBy(),
+            role != null ? role.name() : null
         );
     }
 }

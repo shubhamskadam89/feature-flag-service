@@ -21,6 +21,11 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
     headers['Authorization'] = `Bearer ${token}`;
   }
   
+  const activeOrgId = localStorage.getItem('activeOrgId');
+  if (activeOrgId) {
+    headers['X-Organization-Id'] = activeOrgId;
+  }
+  
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,

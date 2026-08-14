@@ -52,7 +52,7 @@ public class OrganizationServiceImpl implements OrganizationService {
         membershipRepository.save(membership);
 
         log.info("Organization created successfully with ID: {}", savedOrganization.getId());
-        return organizationMapper.toDto(savedOrganization);
+        return organizationMapper.toDto(savedOrganization, MembershipRole.ADMIN);
     }
 
     @Override
@@ -65,9 +65,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 
         return memberships
             .stream()
-            .map(Membership::getOrganization)
-            .filter(org -> org.getDeletedAt() == null)
-            .map(organizationMapper::toDto)
+            .filter(m -> m.getOrganization().getDeletedAt() == null)
+            .map(m -> organizationMapper.toDto(m.getOrganization(), m.getRole()))
             .toList();
     }
 
@@ -83,7 +82,7 @@ public class OrganizationServiceImpl implements OrganizationService {
                 return new ResourceNotFoundException("Organization", "id", orgId.toString());
             });
 
-        return organizationMapper.toDto(organization);
+        return organizationMapper.toDto(organization, getCurrentUserRole(orgId));
     }
 
     @Override
@@ -110,7 +109,7 @@ public class OrganizationServiceImpl implements OrganizationService {
         Organization updatedOrganization = organizationRepository.save(organization);
 
         log.info("Organization with ID {} updated successfully", orgId);
-        return organizationMapper.toDto(updatedOrganization);
+        return organizationMapper.toDto(updatedOrganization, getCurrentUserRole(orgId));
     }
 
     @Override
@@ -129,6 +128,18 @@ public class OrganizationServiceImpl implements OrganizationService {
         Organization deletedOrganization = organizationRepository.save(organization);
 
         log.info("Organization with ID {} soft deleted successfully", orgId);
-        return organizationMapper.toDto(deletedOrganization);
+        return organizationMapper.toDto(deletedOrganization, getCurrentUserRole(orgId));
+    }
+
+    private com.shubhamkadam.feature_flag_service.modules.membership.MembershipRole getCurrentUserRole(UUID orgId) {
+        try {
+            User currentUser = jwtService.getCurrentlyAuthenticatedUser();
+            return membershipRepository
+                .findByIdOrganizationIdAndIdUserId(orgId, currentUser.getId())
+                .map(Membership::getRole)
+                .orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
