@@ -6,6 +6,9 @@ import com.shubhamkadam.feature_flag_service.exceptions.ForbiddenException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceAlreadyExistsException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundException;
 import com.shubhamkadam.feature_flag_service.modules.audit.AuditLogService;
+import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
+import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.cache.EvaluationCacheInvalidator;
 import com.shubhamkadam.feature_flag_service.modules.membership.MembershipRole;
 import com.shubhamkadam.feature_flag_service.modules.project.Project;
 import com.shubhamkadam.feature_flag_service.modules.project.ProjectRepository;
@@ -31,6 +34,8 @@ public class FeatureServiceImpl implements FeatureService {
     private final FeatureMapper featureMapper;
     private final JwtService jwtService;
     private final AuditLogService auditLogService;
+    private final EnvironmentRepository environmentRepository;
+    private final EvaluationCacheInvalidator evaluationCacheInvalidator;
     private final ObjectMapper objectMapper = new ObjectMapper()
         .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
@@ -234,6 +239,11 @@ public class FeatureServiceImpl implements FeatureService {
         feature.setDeletedAt(OffsetDateTime.now());
 
         Feature savedFeature = featureRepository.save(feature);
+
+        List<Environment> environments = environmentRepository.findByProjectIdAndDeletedAtIsNull(projectId);
+        for (Environment environment : environments) {
+            evaluationCacheInvalidator.evictAfterCommit(environment.getId(), feature.getKey());
+        }
 
         log.info("Deleted feature {} from project {}", featureId, projectId);
 

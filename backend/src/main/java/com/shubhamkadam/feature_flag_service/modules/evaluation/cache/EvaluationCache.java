@@ -10,4 +10,6 @@ public interface EvaluationCache {
     void put(UUID environmentId, EvaluationResult result);
 
     void evict(UUID environmentId, String featureKey);
+
+    void evictEnvironment(UUID environmentId);
 }

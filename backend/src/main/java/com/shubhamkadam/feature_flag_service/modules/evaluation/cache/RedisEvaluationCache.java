@@ -38,6 +38,23 @@ public class RedisEvaluationCache implements EvaluationCache {
         redisTemplate.delete(key);
     }
 
+    @Override
+    public void evictEnvironment(UUID environmentId) {
+        String pattern = properties.keyPrefix() + ":" + environmentId + ":*";
+        redisTemplate.execute((org.springframework.data.redis.connection.RedisConnection connection) -> {
+            try (
+                org.springframework.data.redis.core.Cursor<byte[]> cursor = connection.scan(
+                    org.springframework.data.redis.core.ScanOptions.scanOptions().match(pattern).count(100).build()
+                )
+            ) {
+                while (cursor.hasNext()) {
+                    connection.del(cursor.next());
+                }
+            } catch (Exception e) {}
+            return null;
+        });
+    }
+
     private String buildKey(UUID environmentId, String featureKey) {
         return properties.keyPrefix() + ":" + environmentId + ":" + featureKey;
     }

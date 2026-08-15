@@ -27,4 +27,20 @@ public class EvaluationCacheInvalidator {
             }
         );
     }
+
+    public void evictEnvironmentAfterCommit(UUID environmentId) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            evaluationCache.evictEnvironment(environmentId);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(
+            new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    evaluationCache.evictEnvironment(environmentId);
+                }
+            }
+        );
+    }
 }
