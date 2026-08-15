@@ -31,9 +31,7 @@ public class OrganizationContextInterceptor implements HandlerInterceptor {
         String path = request.getRequestURI();
 
         // Skip for auth, evaluation, and organization endpoints
-        if (
-            path.startsWith("/api/v1/auth") || path.startsWith("/api/v1/evaluation") || path.startsWith("/api/v1/org")
-        ) {
+        if (path.startsWith("/api/v1/auth") || path.startsWith("/api/v1/evaluate") || path.startsWith("/api/v1/org")) {
             return true;
         }
 

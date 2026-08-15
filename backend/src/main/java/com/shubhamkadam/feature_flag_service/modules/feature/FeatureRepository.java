@@ -44,4 +44,16 @@ public interface FeatureRepository extends JpaRepository<Feature, UUID> {
         @Param("key") String key,
         @Param("organizationId") UUID organizationId
     );
+
+    Optional<Feature> findByIdAndDeletedAtIsNull(UUID id);
+
+    /**
+     * Evaluation read path: resolve an active feature by its project and public key.
+     * <p>
+     * Scoped to {@code project.id} (derived from the resolved environment) so that
+     * {@code "checkout"} in Project A can never resolve to {@code "checkout"} in
+     * Project B, even if both share the same key string.
+     */
+    @Query("SELECT f FROM Feature f WHERE f.project.id = :projectId AND f.key = :key AND f.deletedAt IS NULL")
+    Optional<Feature> findActiveByProjectIdAndKey(@Param("projectId") UUID projectId, @Param("key") String key);
 }

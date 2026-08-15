@@ -33,4 +33,6 @@ public interface EnvironmentRepository extends JpaRepository<Environment, UUID> 
         UUID projectId,
         UUID organizationId
     );
+
+    Optional<Environment> findByIdAndDeletedAtIsNull(UUID id);
 }
