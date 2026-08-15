@@ -25,4 +25,13 @@ public interface EvaluationService {
      *          final result.
      */
     EvaluationResult evaluate(UUID environmentId, String featureKey);
+
+    /**
+     * Evaluates multiple feature flags in a single request for a specific environment.
+     *
+     * @param environmentId the environment identifier
+     * @param request       the bulk request containing feature keys
+     * @return the {@link BulkEvaluationResponse} containing results in request order
+     */
+    BulkEvaluationResponse evaluateBulk(UUID environmentId, BulkEvaluationRequest request);
 }

@@ -5,7 +5,10 @@ import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundExceptio
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureType;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -50,5 +53,45 @@ public class EvaluationServiceImpl implements EvaluationService {
         EvaluationResult result = new EvaluationResult(data.key(), enabled);
         log.info("Evaluation result: key={} enabled={}", result.key(), result.enabled());
         return result;
+    }
+
+    @Override
+    public BulkEvaluationResponse evaluateBulk(UUID environmentId, BulkEvaluationRequest request) {
+        log.info("Evaluating {} features for environment {}", request.keys().size(), environmentId);
+
+        // Step 1: validate request
+        request.validate();
+
+        // Step 2: resolve active environment (or throw 404)
+        envRepo
+            .findByIdAndDeletedAtIsNull(environmentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Environment not found or deleted"));
+
+        // Step 3: retrieve all active evaluation data for the environment (exactly one repository read)
+        List<FeatureEvaluationData> evaluationData = evaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId);
+
+        // Step 4: build an in-memory key -> data map
+        Map<String, FeatureEvaluationData> dataMap = evaluationData
+            .stream()
+            .collect(Collectors.toMap(FeatureEvaluationData::key, Function.identity()));
+
+        // Step 5: process requested keys in request order
+        List<EvaluationResult> results = request
+            .keys()
+            .stream()
+            .map(key -> {
+                FeatureEvaluationData data = dataMap.get(key);
+                if (data == null) {
+                    throw new ResourceNotFoundException("Feature '" + key + "' not found in this project");
+                }
+                if (data.type() != FeatureType.BOOLEAN) {
+                    throw new BadRequestException("Unsupported feature type: " + data.type());
+                }
+                boolean enabled = Boolean.TRUE.equals(data.enabled());
+                return new EvaluationResult(data.key(), enabled);
+            })
+            .collect(Collectors.toList());
+
+        return new BulkEvaluationResponse(results);
     }
 }
