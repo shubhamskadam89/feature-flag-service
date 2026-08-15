@@ -301,4 +301,31 @@ class EvaluationServiceIntegrationTest {
         // The new FALSE result should now be cached.
         assertThat(evaluationRedisTemplate.hasKey(redisKey)).isTrue();
     }
+
+    @Test
+    void evaluate_cachesTrueAndFalseAsDistinctValues() {
+        Feature enabledFeature = activeFeature(projectA, "enabled-feature");
+        Feature disabledFeature = activeFeature(projectA, "disabled-feature");
+
+        stateFor(enabledFeature, envA, true);
+        stateFor(disabledFeature, envA, false);
+
+        EvaluationResult enabled = evaluationService.evaluate(envA.getId(), "enabled-feature");
+        EvaluationResult disabled = evaluationService.evaluate(envA.getId(), "disabled-feature");
+
+        assertThat(enabled.enabled()).isTrue();
+        assertThat(disabled.enabled()).isFalse();
+
+        String enabledKey = "evaluation:" + envA.getId() + ":enabled-feature";
+        String disabledKey = "evaluation:" + envA.getId() + ":disabled-feature";
+
+        assertThat(evaluationRedisTemplate.hasKey(enabledKey)).isTrue();
+        assertThat(evaluationRedisTemplate.hasKey(disabledKey)).isTrue();
+
+        EvaluationResult cachedEnabled = evaluationService.evaluate(envA.getId(), "enabled-feature");
+        EvaluationResult cachedDisabled = evaluationService.evaluate(envA.getId(), "disabled-feature");
+
+        assertThat(cachedEnabled.enabled()).isTrue();
+        assertThat(cachedDisabled.enabled()).isFalse();
+    }
 }
