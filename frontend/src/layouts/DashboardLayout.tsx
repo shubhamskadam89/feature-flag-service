@@ -277,14 +277,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
     <div className="flex flex-col h-full py-6 px-4">
       {/* Brand logo & mobile close option */}
       <div className="mb-8 flex justify-between items-center px-2">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-[#131311] flex items-center justify-center p-1 overflow-hidden">
-            <img src="/logo-icon.png" className="w-full h-full object-contain filter invert" alt="Flags.dev Logo" />
-          </div>
-          <div>
-            <h1 className="font-display font-black text-sm text-[#131311] tracking-tight">FLAGS.DEV</h1>
-            <p className="font-mono text-[8px] text-[#8d8d8a] uppercase tracking-wider">console</p>
-          </div>
+        <div className="flex items-center">
+          <img src="/logo-light.png" className="h-6 w-auto object-contain" alt="flags.dev Logo" />
+          <span className="ml-2 font-mono text-[8px] bg-[#131311]/5 border border-[#131311]/10 px-1 py-0.5 rounded text-[#8d8d8a] uppercase tracking-wider">console</span>
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(false)}
