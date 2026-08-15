@@ -83,9 +83,7 @@ public class EvaluationServiceImpl implements EvaluationService {
             .findByIdAndDeletedAtIsNull(environmentId)
             .orElseThrow(() -> new ResourceNotFoundException("Environment not found or deleted"));
 
-        // Step 3: retrieve all active evaluation data for the environment (exactly one
-        // repository read)
-        // Step 3: resolve cached results
+        // Step 3: resolve cached results and identify missing keys
         Map<String, EvaluationResult> cachedResults = new HashMap<>();
         List<String> missingKeys = new ArrayList<>();
         for (String key : request.keys()) {
@@ -97,29 +95,43 @@ public class EvaluationServiceImpl implements EvaluationService {
                 missingKeys.add(key);
             }
         }
-        List<FeatureEvaluationData> evaluationData = evaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId);
 
-        // Step 4: build an in-memory key -> data map
-        Map<String, FeatureEvaluationData> dataMap = evaluationData
-            .stream()
-            .collect(Collectors.toMap(FeatureEvaluationData::key, Function.identity()));
+        // Step 4: if there are missing keys, query PostgreSQL once, resolve, and cache results
+        if (!missingKeys.isEmpty()) {
+            List<FeatureEvaluationData> evaluationData = evaluationRepo.findAllEvaluationDataByEnvironmentId(
+                environmentId
+            );
 
-        // Step 5: process requested keys in request order
-        List<EvaluationResult> results = request
-            .keys()
-            .stream()
-            .map(key -> {
+            Map<String, FeatureEvaluationData> dataMap = evaluationData
+                .stream()
+                .collect(Collectors.toMap(FeatureEvaluationData::key, Function.identity()));
+
+            for (String key : missingKeys) {
                 FeatureEvaluationData data = dataMap.get(key);
+
                 if (data == null) {
                     throw new ResourceNotFoundException("Feature '" + key + "' not found in this project");
                 }
+
                 if (data.type() != FeatureType.BOOLEAN) {
                     throw new BadRequestException("Unsupported feature type: " + data.type());
                 }
+
                 boolean enabled = Boolean.TRUE.equals(data.enabled());
-                return new EvaluationResult(data.key(), enabled);
-            })
-            .collect(Collectors.toList());
+
+                EvaluationResult result = new EvaluationResult(data.key(), enabled);
+
+                cachedResults.put(key, result);
+            }
+
+            for (String key : missingKeys) {
+                EvaluationResult result = cachedResults.get(key);
+                evaluationCache.put(environmentId, result);
+            }
+        }
+
+        // Step 5: process requested keys in request order
+        List<EvaluationResult> results = request.keys().stream().map(cachedResults::get).collect(Collectors.toList());
 
         return new BulkEvaluationResponse(results);
     }

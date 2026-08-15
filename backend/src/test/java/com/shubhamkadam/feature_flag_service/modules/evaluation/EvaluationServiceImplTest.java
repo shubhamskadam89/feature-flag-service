@@ -337,6 +337,8 @@ class EvaluationServiceImplTest {
         service.evaluateBulk(environmentId, request);
 
         verify(mockEvaluationRepo, times(1)).findAllEvaluationDataByEnvironmentId(environmentId);
+
+        verify(evaluationCache, times(3)).put(eq(environmentId), any(EvaluationResult.class));
     }
 
     @Test
@@ -365,5 +367,42 @@ class EvaluationServiceImplTest {
         );
 
         verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
+    }
+
+    @Test
+    void evaluateBulk_whenSomeKeysHitAndSomeMiss_resolvesAndPreservesOrder() {
+        UUID environmentId = UUID.randomUUID();
+
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout", "payments", "search"));
+
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
+            Optional.of(org.mockito.Mockito.mock(Environment.class))
+        );
+
+        when(evaluationCache.get(environmentId, "checkout")).thenReturn(
+            Optional.of(new EvaluationResult("checkout", true))
+        );
+
+        when(evaluationCache.get(environmentId, "payments")).thenReturn(Optional.empty());
+
+        when(evaluationCache.get(environmentId, "search")).thenReturn(
+            Optional.of(new EvaluationResult("search", false))
+        );
+
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId)).thenReturn(
+            List.of(new FeatureEvaluationData(UUID.randomUUID(), "payments", FeatureType.BOOLEAN, true, null, null))
+        );
+
+        BulkEvaluationResponse response = service.evaluateBulk(environmentId, request);
+
+        assertThat(response.results()).containsExactly(
+            new EvaluationResult("checkout", true),
+            new EvaluationResult("payments", true),
+            new EvaluationResult("search", false)
+        );
+
+        verify(mockEvaluationRepo, times(1)).findAllEvaluationDataByEnvironmentId(environmentId);
+
+        verify(evaluationCache).put(environmentId, new EvaluationResult("payments", true));
     }
 }
