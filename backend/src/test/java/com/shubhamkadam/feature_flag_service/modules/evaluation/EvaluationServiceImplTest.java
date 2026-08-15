@@ -422,4 +422,44 @@ class EvaluationServiceImplTest {
 
         verify(evaluationCache).put(environmentId, new EvaluationResult("payments", true));
     }
+
+    @Test
+    void evaluate_whenRedisFailsAndFeatureNotFound_throwsResourceNotFoundException() {
+        UUID environmentId = UUID.randomUUID();
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
+            Optional.of(org.mockito.Mockito.mock(Environment.class))
+        );
+
+        // Redis fails (returns Optional.empty())
+        when(evaluationCache.get(environmentId, "unknown-key")).thenReturn(Optional.empty());
+
+        // DB fetch fails (no feature in active database representation)
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.evaluate(environmentId, "unknown-key")).isInstanceOf(
+            ResourceNotFoundException.class
+        );
+    }
+
+    @Test
+    void evaluate_whenRedisFailsAndFeatureTypeUnsupported_throwsBadRequestException() {
+        UUID environmentId = UUID.randomUUID();
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
+            Optional.of(org.mockito.Mockito.mock(Environment.class))
+        );
+
+        // Redis fails (returns Optional.empty())
+        when(evaluationCache.get(environmentId, "unsupported-key")).thenReturn(Optional.empty());
+
+        // DB returns unsupported feature type
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId)).thenReturn(
+            List.of(
+                new FeatureEvaluationData(UUID.randomUUID(), "unsupported-key", FeatureType.STRING, true, null, null)
+            )
+        );
+
+        assertThatThrownBy(() -> service.evaluate(environmentId, "unsupported-key")).isInstanceOf(
+            BadRequestException.class
+        );
+    }
 }

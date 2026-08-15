@@ -54,8 +54,9 @@ These may become extensions later, but only once the core system is stable and a
 
 ### Phase 4 — Evaluation Engine
 - [x] Bulk evaluation API
-- [ ] Redis cache-aside, Postgres fallback on miss
-- [ ] Cache invalidation on mutation
+- [x] Redis cache-aside, Postgres fallback on miss
+- [x] Cache invalidation on mutation
+- [x] Cache resilience (fail-open to PostgreSQL on Redis connection/serialization failures)
 - [ ] Deterministic percentage rollout
 - [x] Evaluation tests (including concurrency)
 - [ ] Performance benchmarks: throughput, p50/p95/p99 latency, cache hit rate
