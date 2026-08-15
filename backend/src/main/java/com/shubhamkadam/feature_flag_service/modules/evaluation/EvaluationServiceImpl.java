@@ -3,6 +3,7 @@ package com.shubhamkadam.feature_flag_service.modules.evaluation;
 import com.shubhamkadam.feature_flag_service.exceptions.BadRequestException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundException;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.cache.EvaluationCache;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureType;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 
     private final EnvironmentRepository envRepo;
     private final EvaluationRepository evaluationRepo;
+    private final EvaluationCache evaluationCache;
 
     @Override
     public EvaluationResult evaluate(UUID environmentId, String featureKey) {
@@ -67,7 +69,8 @@ public class EvaluationServiceImpl implements EvaluationService {
             .findByIdAndDeletedAtIsNull(environmentId)
             .orElseThrow(() -> new ResourceNotFoundException("Environment not found or deleted"));
 
-        // Step 3: retrieve all active evaluation data for the environment (exactly one repository read)
+        // Step 3: retrieve all active evaluation data for the environment (exactly one
+        // repository read)
         List<FeatureEvaluationData> evaluationData = evaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId);
 
         // Step 4: build an in-memory key -> data map

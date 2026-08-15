@@ -11,6 +11,7 @@ import com.shubhamkadam.feature_flag_service.exceptions.BadRequestException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundException;
 import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.cache.EvaluationCache;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureType;
 import com.shubhamkadam.feature_flag_service.modules.project.Project;
 import java.util.List;
@@ -39,9 +40,12 @@ class EvaluationServiceImplTest {
     private EvaluationServiceImpl service;
     private Environment environmentA;
 
+    @Mock
+    private EvaluationCache evaluationCache;
+
     @BeforeEach
     void setUp() {
-        service = new EvaluationServiceImpl(mockEnvRepo, mockEvaluationRepo);
+        service = new EvaluationServiceImpl(mockEnvRepo, mockEvaluationRepo, evaluationCache);
 
         environmentA = Environment.builder().id(ENV_ID).project(Project.builder().id(PROJECT_A).build()).build();
     }
@@ -101,7 +105,8 @@ class EvaluationServiceImplTest {
 
     @Test
     void evaluate_whenFeatureKeyExistsInDifferentProject_throws() {
-        // Environment -> Project A, but Project B has the feature (so it won't be returned by the Env A query)
+        // Environment -> Project A, but Project B has the feature (so it won't be
+        // returned by the Env A query)
         when(mockEnvRepo.findByIdAndDeletedAtIsNull(ENV_ID)).thenReturn(Optional.of(environmentA));
         when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(ENV_ID)).thenReturn(List.of());
 
