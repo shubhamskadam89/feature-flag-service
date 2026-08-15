@@ -3,8 +3,12 @@ package com.shubhamkadam.feature_flag_service.modules.evaluation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shubhamkadam.feature_flag_service.exceptions.BadRequestException;
@@ -177,6 +181,8 @@ class EvaluationServiceImplTest {
         assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request))
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("missing-flag");
+
+        verify(evaluationCache, never()).put(any(), any());
     }
 
     @Test
@@ -193,6 +199,8 @@ class EvaluationServiceImplTest {
         assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request))
             .isInstanceOf(BadRequestException.class)
             .hasMessageContaining("Unsupported feature type");
+
+        verify(evaluationCache, never()).put(any(), any());
     }
 
     @Test
@@ -203,6 +211,18 @@ class EvaluationServiceImplTest {
         assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request)).isInstanceOf(ResourceNotFoundException.class);
 
         verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
+        verifyNoInteractions(evaluationCache);
+    }
+
+    @Test
+    void evaluateBulk_whenDuplicateKeysInRequest_throwsAndDoesNotInteractWithCache() {
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout", "checkout"));
+
+        assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request)).isInstanceOf(BadRequestException.class);
+
+        verifyNoInteractions(evaluationCache);
+        verifyNoInteractions(mockEvaluationRepo);
+        verifyNoInteractions(mockEnvRepo);
     }
 
     @Test
@@ -309,5 +329,97 @@ class EvaluationServiceImplTest {
         assertThat(result.enabled()).isFalse();
 
         verify(evaluationCache).put(environmentId, result);
+    }
+
+    @Test
+    void evaluateBulk_whenAllKeysMiss_cacheUsesSingleRepositoryRead() {
+        UUID environmentId = UUID.randomUUID();
+
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout", "payments", "search"));
+
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
+            Optional.of(org.mockito.Mockito.mock(Environment.class))
+        );
+
+        when(evaluationCache.get(eq(environmentId), anyString())).thenReturn(Optional.empty());
+
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId)).thenReturn(
+            List.of(
+                new FeatureEvaluationData(UUID.randomUUID(), "checkout", FeatureType.BOOLEAN, true, null, null),
+                new FeatureEvaluationData(UUID.randomUUID(), "payments", FeatureType.BOOLEAN, false, null, null),
+                new FeatureEvaluationData(UUID.randomUUID(), "search", FeatureType.BOOLEAN, true, null, null)
+            )
+        );
+
+        service.evaluateBulk(environmentId, request);
+
+        verify(mockEvaluationRepo, times(1)).findAllEvaluationDataByEnvironmentId(environmentId);
+
+        verify(evaluationCache, times(3)).put(eq(environmentId), any(EvaluationResult.class));
+    }
+
+    @Test
+    void evaluateBulk_whenAllKeysHit_doesNotQueryRepository() {
+        UUID environmentId = UUID.randomUUID();
+
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout", "payments"));
+
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
+            Optional.of(org.mockito.Mockito.mock(Environment.class))
+        );
+
+        when(evaluationCache.get(environmentId, "checkout")).thenReturn(
+            Optional.of(new EvaluationResult("checkout", true))
+        );
+
+        when(evaluationCache.get(environmentId, "payments")).thenReturn(
+            Optional.of(new EvaluationResult("payments", false))
+        );
+
+        BulkEvaluationResponse response = service.evaluateBulk(environmentId, request);
+
+        assertThat(response.results()).containsExactly(
+            new EvaluationResult("checkout", true),
+            new EvaluationResult("payments", false)
+        );
+
+        verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
+    }
+
+    @Test
+    void evaluateBulk_whenSomeKeysHitAndSomeMiss_resolvesAndPreservesOrder() {
+        UUID environmentId = UUID.randomUUID();
+
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout", "payments", "search"));
+
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
+            Optional.of(org.mockito.Mockito.mock(Environment.class))
+        );
+
+        when(evaluationCache.get(environmentId, "checkout")).thenReturn(
+            Optional.of(new EvaluationResult("checkout", true))
+        );
+
+        when(evaluationCache.get(environmentId, "payments")).thenReturn(Optional.empty());
+
+        when(evaluationCache.get(environmentId, "search")).thenReturn(
+            Optional.of(new EvaluationResult("search", false))
+        );
+
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId)).thenReturn(
+            List.of(new FeatureEvaluationData(UUID.randomUUID(), "payments", FeatureType.BOOLEAN, true, null, null))
+        );
+
+        BulkEvaluationResponse response = service.evaluateBulk(environmentId, request);
+
+        assertThat(response.results()).containsExactly(
+            new EvaluationResult("checkout", true),
+            new EvaluationResult("payments", true),
+            new EvaluationResult("search", false)
+        );
+
+        verify(mockEvaluationRepo, times(1)).findAllEvaluationDataByEnvironmentId(environmentId);
+
+        verify(evaluationCache).put(environmentId, new EvaluationResult("payments", true));
     }
 }
