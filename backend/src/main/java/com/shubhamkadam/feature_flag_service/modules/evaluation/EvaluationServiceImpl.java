@@ -3,9 +3,11 @@ package com.shubhamkadam.feature_flag_service.modules.evaluation;
 import com.shubhamkadam.feature_flag_service.exceptions.BadRequestException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundException;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.cache.EvaluationCache;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureType;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -22,6 +24,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 
     private final EnvironmentRepository envRepo;
     private final EvaluationRepository evaluationRepo;
+    private final EvaluationCache evaluationCache;
 
     @Override
     public EvaluationResult evaluate(UUID environmentId, String featureKey) {
@@ -31,26 +34,37 @@ public class EvaluationServiceImpl implements EvaluationService {
         envRepo
             .findByIdAndDeletedAtIsNull(environmentId)
             .orElseThrow(() -> new ResourceNotFoundException("Environment not found or deleted"));
+        // Step 2: check cache before querying PostgreSQL
+        Optional<EvaluationResult> cachedResult = evaluationCache.get(environmentId, featureKey);
 
-        // Step 2: retrieve all active evaluation data for the environment
+        if (cachedResult.isPresent()) {
+            log.info("Cache hit for feature '{}' in environment {}", featureKey, environmentId);
+            return cachedResult.get();
+        }
+
+        // Step 3: retrieve all active evaluation data for the environment
         List<FeatureEvaluationData> evaluationData = evaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId);
 
-        // Step 3: find the requested feature key
+        // Step 4: find the requested feature key
         FeatureEvaluationData data = evaluationData
             .stream()
             .filter(d -> d.key().equals(featureKey))
             .findFirst()
             .orElseThrow(() -> new ResourceNotFoundException("Feature '" + featureKey + "' not found in this project"));
 
-        // Step 4: Verify type is BOOLEAN
+        // Step 5: Verify type is BOOLEAN
         if (data.type() != FeatureType.BOOLEAN) {
             throw new BadRequestException("Unsupported feature type: " + data.type());
         }
 
-        // Step 5: resolve enabled state (absent state defaults to false)
+        // Step 6: resolve enabled state (absent state defaults to false)
         boolean enabled = Boolean.TRUE.equals(data.enabled());
 
+        // Step 7: cache the result for future requests
         EvaluationResult result = new EvaluationResult(data.key(), enabled);
+
+        evaluationCache.put(environmentId, result);
+
         log.info("Evaluation result: key={} enabled={}", result.key(), result.enabled());
         return result;
     }
@@ -67,7 +81,8 @@ public class EvaluationServiceImpl implements EvaluationService {
             .findByIdAndDeletedAtIsNull(environmentId)
             .orElseThrow(() -> new ResourceNotFoundException("Environment not found or deleted"));
 
-        // Step 3: retrieve all active evaluation data for the environment (exactly one repository read)
+        // Step 3: retrieve all active evaluation data for the environment (exactly one
+        // repository read)
         List<FeatureEvaluationData> evaluationData = evaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId);
 
         // Step 4: build an in-memory key -> data map

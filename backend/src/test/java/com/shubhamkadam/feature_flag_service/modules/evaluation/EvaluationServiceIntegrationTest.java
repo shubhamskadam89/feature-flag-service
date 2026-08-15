@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +53,9 @@ class EvaluationServiceIntegrationTest {
     @Autowired
     private FeatureStateRepository featureStateRepository;
 
+    @Autowired
+    private RedisTemplate<String, EvaluationResult> evaluationRedisTemplate;
+
     // ── shared fixtures ───────────────────────────────────────────────────────
 
     private Organization org;
@@ -62,6 +66,8 @@ class EvaluationServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        evaluationRedisTemplate.getConnectionFactory().getConnection().serverCommands().flushDb();
+
         owner = userRepository.save(
             User.builder()
                 .id(UUID.randomUUID())
@@ -147,6 +153,34 @@ class EvaluationServiceIntegrationTest {
         assertThat(result.enabled()).isTrue();
     }
 
+    @Test
+    void evaluate_firstRequestPopulatesCache_secondRequestUsesCachedResult() {
+        Feature checkout = activeFeature(projectA, "checkout");
+        FeatureState state = stateFor(checkout, envA, true);
+
+        // First evaluation:
+        // Redis MISS -> PostgreSQL -> Redis PUT
+        EvaluationResult first = evaluationService.evaluate(envA.getId(), "checkout");
+
+        assertThat(first.key()).isEqualTo("checkout");
+        assertThat(first.enabled()).isTrue();
+
+        String redisKey = "evaluation:" + envA.getId() + ":checkout";
+
+        assertThat(evaluationRedisTemplate.hasKey(redisKey)).isTrue();
+
+        // Change PostgreSQL state after the cache has been populated.
+        state.setEnabled(false);
+        featureStateRepository.saveAndFlush(state);
+
+        // Second evaluation:
+        // Redis HIT -> should still return the cached TRUE.
+        EvaluationResult second = evaluationService.evaluate(envA.getId(), "checkout");
+
+        assertThat(second.key()).isEqualTo("checkout");
+        assertThat(second.enabled()).isTrue();
+    }
+
     // ── 2. feature from another project → not found ───────────────────────────
     //
     // "checkout" exists in Project B, but envA belongs to Project A.
@@ -222,12 +256,76 @@ class EvaluationServiceIntegrationTest {
         assertThat(evaluationService.evaluate(envA.getId(), "new-ui-disabled").enabled()).isFalse();
     }
 
-    // ── 7. missing environment → not found ───────────────────────────────────
-
     @Test
     void evaluate_whenEnvironmentDoesNotExist_throws() {
         assertThatThrownBy(() -> evaluationService.evaluate(UUID.randomUUID(), "anything")).isInstanceOf(
             ResourceNotFoundException.class
         );
+    }
+
+    // ── 8. cache expiry ──────────────────────────────────────────────────────
+
+    @Test
+    void evaluate_afterCacheExpiry_readsUpdatedDatabaseValue() throws InterruptedException {
+        Feature checkout = activeFeature(projectA, "checkout");
+        FeatureState state = stateFor(checkout, envA, true);
+
+        // First evaluation populates Redis with TRUE.
+        EvaluationResult first = evaluationService.evaluate(envA.getId(), "checkout");
+
+        assertThat(first.enabled()).isTrue();
+
+        String redisKey = "evaluation:" + envA.getId() + ":checkout";
+
+        assertThat(evaluationRedisTemplate.hasKey(redisKey)).isTrue();
+
+        // Change PostgreSQL to FALSE.
+        state.setEnabled(false);
+        featureStateRepository.saveAndFlush(state);
+
+        // Cache is still valid, so we should still get TRUE.
+        EvaluationResult cached = evaluationService.evaluate(envA.getId(), "checkout");
+
+        assertThat(cached.enabled()).isTrue();
+
+        // Wait for the 1-second test TTL to expire.
+        Thread.sleep(1_500);
+
+        assertThat(evaluationRedisTemplate.hasKey(redisKey)).isFalse();
+
+        // Cache MISS -> PostgreSQL -> FALSE -> Redis PUT.
+        EvaluationResult refreshed = evaluationService.evaluate(envA.getId(), "checkout");
+
+        assertThat(refreshed.enabled()).isFalse();
+
+        // The new FALSE result should now be cached.
+        assertThat(evaluationRedisTemplate.hasKey(redisKey)).isTrue();
+    }
+
+    @Test
+    void evaluate_cachesTrueAndFalseAsDistinctValues() {
+        Feature enabledFeature = activeFeature(projectA, "enabled-feature");
+        Feature disabledFeature = activeFeature(projectA, "disabled-feature");
+
+        stateFor(enabledFeature, envA, true);
+        stateFor(disabledFeature, envA, false);
+
+        EvaluationResult enabled = evaluationService.evaluate(envA.getId(), "enabled-feature");
+        EvaluationResult disabled = evaluationService.evaluate(envA.getId(), "disabled-feature");
+
+        assertThat(enabled.enabled()).isTrue();
+        assertThat(disabled.enabled()).isFalse();
+
+        String enabledKey = "evaluation:" + envA.getId() + ":enabled-feature";
+        String disabledKey = "evaluation:" + envA.getId() + ":disabled-feature";
+
+        assertThat(evaluationRedisTemplate.hasKey(enabledKey)).isTrue();
+        assertThat(evaluationRedisTemplate.hasKey(disabledKey)).isTrue();
+
+        EvaluationResult cachedEnabled = evaluationService.evaluate(envA.getId(), "enabled-feature");
+        EvaluationResult cachedDisabled = evaluationService.evaluate(envA.getId(), "disabled-feature");
+
+        assertThat(cachedEnabled.enabled()).isTrue();
+        assertThat(cachedDisabled.enabled()).isFalse();
     }
 }
