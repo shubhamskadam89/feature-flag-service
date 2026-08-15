@@ -1,0 +1,4 @@
+feature-flag:
+  evaluation:
+    cache:
+      ttl: 1s

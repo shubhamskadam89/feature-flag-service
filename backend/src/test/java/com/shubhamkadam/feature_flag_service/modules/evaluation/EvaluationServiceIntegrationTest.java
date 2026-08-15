@@ -256,12 +256,49 @@ class EvaluationServiceIntegrationTest {
         assertThat(evaluationService.evaluate(envA.getId(), "new-ui-disabled").enabled()).isFalse();
     }
 
-    // ── 7. missing environment → not found ───────────────────────────────────
-
     @Test
     void evaluate_whenEnvironmentDoesNotExist_throws() {
         assertThatThrownBy(() -> evaluationService.evaluate(UUID.randomUUID(), "anything")).isInstanceOf(
             ResourceNotFoundException.class
         );
+    }
+
+    // ── 8. cache expiry ──────────────────────────────────────────────────────
+
+    @Test
+    void evaluate_afterCacheExpiry_readsUpdatedDatabaseValue() throws InterruptedException {
+        Feature checkout = activeFeature(projectA, "checkout");
+        FeatureState state = stateFor(checkout, envA, true);
+
+        // First evaluation populates Redis with TRUE.
+        EvaluationResult first = evaluationService.evaluate(envA.getId(), "checkout");
+
+        assertThat(first.enabled()).isTrue();
+
+        String redisKey = "evaluation:" + envA.getId() + ":checkout";
+
+        assertThat(evaluationRedisTemplate.hasKey(redisKey)).isTrue();
+
+        // Change PostgreSQL to FALSE.
+        state.setEnabled(false);
+        featureStateRepository.saveAndFlush(state);
+
+        // Cache is still valid, so we should still get TRUE.
+        EvaluationResult cached = evaluationService.evaluate(envA.getId(), "checkout");
+
+        assertThat(cached.enabled()).isTrue();
+
+        // Wait for the 1-second test TTL to expire.
+        Thread.sleep(1_500);
+
+        assertThat(evaluationRedisTemplate.hasKey(redisKey)).isFalse();
+
+        // Cache MISS -> PostgreSQL -> FALSE -> Redis PUT.
+        EvaluationResult refreshed = evaluationService.evaluate(envA.getId(), "checkout");
+
+        assertThat(refreshed.enabled()).isFalse();
+
+        // The new FALSE result should now be cached.
+        assertThat(evaluationRedisTemplate.hasKey(redisKey)).isTrue();
     }
 }
