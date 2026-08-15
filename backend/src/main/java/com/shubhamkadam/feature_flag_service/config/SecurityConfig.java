@@ -1,5 +1,6 @@
 package com.shubhamkadam.feature_flag_service.config;
 
+import com.shubhamkadam.feature_flag_service.security.ApiKeyAuthenticationFilter;
 import com.shubhamkadam.feature_flag_service.security.CustomUserDetailsService;
 import com.shubhamkadam.feature_flag_service.security.JwtAuthenticationFilter;
 import java.util.List;
@@ -32,6 +33,7 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final ApiKeyAuthenticationFilter apiKeyAuthFilter;
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
@@ -57,7 +59,9 @@ public class SecurityConfig {
             List.of("http://localhost:5173", "http://localhost:5174", "http://localhost:3000")
         );
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type", "X-Organization-Id"));
+        configuration.setAllowedHeaders(
+            List.of("Authorization", "Cache-Control", "Content-Type", "X-Organization-Id", "X-Api-Key")
+        );
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -78,7 +82,10 @@ public class SecurityConfig {
                     .authenticated()
             )
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            // API-key filter runs first (only activates for /api/v1/evaluate/**);
+            // JWT filter runs second for all other authenticated endpoints.
+            .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(jwtAuthFilter, ApiKeyAuthenticationFilter.class);
 
         return http.build();
     }
