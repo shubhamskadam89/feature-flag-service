@@ -1,10 +1,12 @@
 package com.shubhamkadam.feature_flag_service.modules.evaluation;
 
+import com.shubhamkadam.feature_flag_service.exceptions.BadRequestException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundException;
 import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
 import com.shubhamkadam.feature_flag_service.modules.feature.Feature;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureRepository;
+import com.shubhamkadam.feature_flag_service.modules.feature.FeatureType;
 import com.shubhamkadam.feature_flag_service.modules.featurestate.FeatureStateRepository;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -39,6 +41,11 @@ public class EvaluationServiceImpl implements EvaluationService {
             .orElseThrow(() -> new ResourceNotFoundException("Feature '" + featureKey + "' not found in this project"));
 
         log.debug("Resolved feature: {} (key: {})", feature.getId(), feature.getKey());
+
+        // Verify the feature type is supported (V1 only supports BOOLEAN)
+        if (feature.getType() != FeatureType.BOOLEAN) {
+            throw new BadRequestException("Unsupported feature type: " + feature.getType());
+        }
 
         // Step 3: look up state — absent state means nobody has explicitly enabled
         // this flag in this environment, so the default is false

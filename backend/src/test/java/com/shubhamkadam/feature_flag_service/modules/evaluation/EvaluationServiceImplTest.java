@@ -8,11 +8,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.shubhamkadam.feature_flag_service.exceptions.BadRequestException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundException;
 import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
 import com.shubhamkadam.feature_flag_service.modules.feature.Feature;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureRepository;
+import com.shubhamkadam.feature_flag_service.modules.feature.FeatureType;
 import com.shubhamkadam.feature_flag_service.modules.featurestate.FeatureState;
 import com.shubhamkadam.feature_flag_service.modules.featurestate.FeatureStateRepository;
 import com.shubhamkadam.feature_flag_service.modules.project.Project;
@@ -57,7 +59,7 @@ class EvaluationServiceImplTest {
 
         environmentA = Environment.builder().id(ENV_ID).project(Project.builder().id(PROJECT_A).build()).build();
 
-        checkoutFeature = Feature.builder().id(FEATURE_ID).key(FEATURE_KEY).build();
+        checkoutFeature = Feature.builder().id(FEATURE_ID).key(FEATURE_KEY).type(FeatureType.BOOLEAN).build();
     }
 
     // ── 1. enabled state → true ───────────────────────────────────────────────
@@ -161,5 +163,20 @@ class EvaluationServiceImplTest {
         // Prove the service called the repo with Project A's id — not a broader lookup.
         // This is the invariant: evaluation is always scoped to the environment's project.
         verify(mockFeatureRepo).findActiveByProjectIdAndKey(PROJECT_A, FEATURE_KEY);
+    }
+
+    // ── 7. unsupported feature type ──────────────────────────────────────────
+
+    @Test
+    void evaluate_whenFeatureTypeIsUnsupported_throws() {
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(ENV_ID)).thenReturn(Optional.of(environmentA));
+        Feature unsupportedFeature = Feature.builder().id(FEATURE_ID).key(FEATURE_KEY).type(FeatureType.STRING).build();
+        when(mockFeatureRepo.findActiveByProjectIdAndKey(PROJECT_A, FEATURE_KEY)).thenReturn(
+            Optional.of(unsupportedFeature)
+        );
+
+        assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY))
+            .isInstanceOf(BadRequestException.class)
+            .hasMessageContaining("Unsupported feature type");
     }
 }
