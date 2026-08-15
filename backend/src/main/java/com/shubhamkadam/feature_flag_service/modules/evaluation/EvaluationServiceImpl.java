@@ -5,6 +5,8 @@ import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundExceptio
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
 import com.shubhamkadam.feature_flag_service.modules.evaluation.cache.EvaluationCache;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureType;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -83,6 +85,18 @@ public class EvaluationServiceImpl implements EvaluationService {
 
         // Step 3: retrieve all active evaluation data for the environment (exactly one
         // repository read)
+        // Step 3: resolve cached results
+        Map<String, EvaluationResult> cachedResults = new HashMap<>();
+        List<String> missingKeys = new ArrayList<>();
+        for (String key : request.keys()) {
+            Optional<EvaluationResult> cachedResult = evaluationCache.get(environmentId, key);
+
+            if (cachedResult.isPresent()) {
+                cachedResults.put(key, cachedResult.get());
+            } else {
+                missingKeys.add(key);
+            }
+        }
         List<FeatureEvaluationData> evaluationData = evaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId);
 
         // Step 4: build an in-memory key -> data map
