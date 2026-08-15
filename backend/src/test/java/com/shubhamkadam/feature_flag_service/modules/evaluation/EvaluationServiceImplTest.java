@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shubhamkadam.feature_flag_service.exceptions.BadRequestException;
@@ -180,6 +181,8 @@ class EvaluationServiceImplTest {
         assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request))
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("missing-flag");
+
+        verify(evaluationCache, never()).put(any(), any());
     }
 
     @Test
@@ -196,6 +199,8 @@ class EvaluationServiceImplTest {
         assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request))
             .isInstanceOf(BadRequestException.class)
             .hasMessageContaining("Unsupported feature type");
+
+        verify(evaluationCache, never()).put(any(), any());
     }
 
     @Test
@@ -206,6 +211,18 @@ class EvaluationServiceImplTest {
         assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request)).isInstanceOf(ResourceNotFoundException.class);
 
         verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
+        verifyNoInteractions(evaluationCache);
+    }
+
+    @Test
+    void evaluateBulk_whenDuplicateKeysInRequest_throwsAndDoesNotInteractWithCache() {
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout", "checkout"));
+
+        assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request)).isInstanceOf(BadRequestException.class);
+
+        verifyNoInteractions(evaluationCache);
+        verifyNoInteractions(mockEvaluationRepo);
+        verifyNoInteractions(mockEnvRepo);
     }
 
     @Test
