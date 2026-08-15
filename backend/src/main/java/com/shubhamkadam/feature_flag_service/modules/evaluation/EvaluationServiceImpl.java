@@ -60,7 +60,11 @@ public class EvaluationServiceImpl implements EvaluationService {
         // Step 6: resolve enabled state (absent state defaults to false)
         boolean enabled = Boolean.TRUE.equals(data.enabled());
 
+        // Step 7: cache the result for future requests
         EvaluationResult result = new EvaluationResult(data.key(), enabled);
+
+        evaluationCache.put(environmentId, result);
+
         log.info("Evaluation result: key={} enabled={}", result.key(), result.enabled());
         return result;
     }

@@ -101,6 +101,8 @@ class EvaluationServiceImplTest {
         when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(ENV_ID)).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY)).isInstanceOf(ResourceNotFoundException.class);
+
+        verify(evaluationCache, never()).put(any(), any());
     }
 
     @Test
@@ -113,6 +115,8 @@ class EvaluationServiceImplTest {
         assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY))
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining(FEATURE_KEY);
+
+        verify(evaluationCache, never()).put(any(), any());
     }
 
     @Test
@@ -125,6 +129,8 @@ class EvaluationServiceImplTest {
         assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY))
             .isInstanceOf(BadRequestException.class)
             .hasMessageContaining("Unsupported feature type");
+
+        verify(evaluationCache, never()).put(any(), any());
     }
 
     @Test
@@ -240,5 +246,68 @@ class EvaluationServiceImplTest {
         assertThat(result.enabled()).isFalse();
 
         verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
+    }
+
+    @Test
+    void shouldQueryRepositoryAndCacheResultOnCacheMiss() {
+        UUID environmentId = UUID.randomUUID();
+        String featureKey = "checkout";
+
+        FeatureEvaluationData data = new FeatureEvaluationData(
+            UUID.randomUUID(),
+            featureKey,
+            FeatureType.BOOLEAN,
+            true,
+            null,
+            null
+        );
+
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
+            Optional.of(org.mockito.Mockito.mock(Environment.class))
+        );
+
+        when(evaluationCache.get(environmentId, featureKey)).thenReturn(Optional.empty());
+
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId)).thenReturn(List.of(data));
+
+        EvaluationResult result = service.evaluate(environmentId, featureKey);
+
+        assertThat(result.key()).isEqualTo(featureKey);
+        assertThat(result.enabled()).isTrue();
+
+        verify(evaluationCache).get(environmentId, featureKey);
+
+        verify(mockEvaluationRepo).findAllEvaluationDataByEnvironmentId(environmentId);
+
+        verify(evaluationCache).put(environmentId, result);
+    }
+
+    @Test
+    void shouldCacheFalseWhenEvaluationStateIsMissing() {
+        UUID environmentId = UUID.randomUUID();
+        String featureKey = "checkout";
+
+        FeatureEvaluationData data = new FeatureEvaluationData(
+            UUID.randomUUID(),
+            featureKey,
+            FeatureType.BOOLEAN,
+            null,
+            null,
+            null
+        );
+
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
+            Optional.of(org.mockito.Mockito.mock(Environment.class))
+        );
+
+        when(evaluationCache.get(environmentId, featureKey)).thenReturn(Optional.empty());
+
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId)).thenReturn(List.of(data));
+
+        EvaluationResult result = service.evaluate(environmentId, featureKey);
+
+        assertThat(result.enabled()).isFalse();
+
+        verify(evaluationCache).put(environmentId, result);
     }
 }
