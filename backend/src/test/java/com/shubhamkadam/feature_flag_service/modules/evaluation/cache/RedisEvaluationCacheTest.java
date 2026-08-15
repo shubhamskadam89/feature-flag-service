@@ -1,6 +1,11 @@
 package com.shubhamkadam.feature_flag_service.modules.evaluation.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,8 +15,10 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.serializer.SerializationException;
 
 class RedisEvaluationCacheTest {
 
@@ -79,5 +86,54 @@ class RedisEvaluationCacheTest {
         cache.evict(environmentId, "checkout");
 
         verify(redisTemplate).delete("evaluation:" + environmentId + ":checkout");
+    }
+
+    @Test
+    void get_whenRedisFails_returnsEmpty() {
+        UUID environmentId = UUID.randomUUID();
+        when(valueOperations.get(anyString())).thenThrow(new RedisConnectionFailureException("Redis unavailable"));
+
+        Optional<EvaluationResult> result = cache.get(environmentId, "checkout");
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void get_whenDeserializationFails_returnsEmpty() {
+        UUID environmentId = UUID.randomUUID();
+        when(valueOperations.get(anyString())).thenThrow(new SerializationException("Malformed cached value"));
+
+        Optional<EvaluationResult> result = cache.get(environmentId, "checkout");
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void put_whenRedisFails_doesNotThrow() {
+        UUID environmentId = UUID.randomUUID();
+        doThrow(new RedisConnectionFailureException("Redis unavailable"))
+            .when(valueOperations)
+            .set(anyString(), any(), anyLong(), any());
+
+        assertThatCode(() -> cache.put(environmentId, new EvaluationResult("checkout", true))
+        ).doesNotThrowAnyException();
+    }
+
+    @Test
+    void evict_whenRedisFails_doesNotThrow() {
+        UUID environmentId = UUID.randomUUID();
+        doThrow(new RedisConnectionFailureException("Redis unavailable")).when(redisTemplate).delete(anyString());
+
+        assertThatCode(() -> cache.evict(environmentId, "checkout")).doesNotThrowAnyException();
+    }
+
+    @Test
+    void evictEnvironment_whenRedisFails_doesNotThrow() {
+        UUID environmentId = UUID.randomUUID();
+        doThrow(new RedisConnectionFailureException("Redis unavailable"))
+            .when(redisTemplate)
+            .execute(any(org.springframework.data.redis.core.RedisCallback.class));
+
+        assertThatCode(() -> cache.evictEnvironment(environmentId)).doesNotThrowAnyException();
     }
 }
