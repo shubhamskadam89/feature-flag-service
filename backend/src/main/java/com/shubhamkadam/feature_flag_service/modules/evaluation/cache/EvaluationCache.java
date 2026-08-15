@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface EvaluationCache {
-
     Optional<EvaluationResult> get(UUID environmentId, String featureKey);
 
     void put(UUID environmentId, EvaluationResult result);
