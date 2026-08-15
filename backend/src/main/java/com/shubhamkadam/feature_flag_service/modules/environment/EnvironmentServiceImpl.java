@@ -5,6 +5,7 @@ import com.shubhamkadam.feature_flag_service.exceptions.ForbiddenException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceAlreadyExistsException;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundException;
 import com.shubhamkadam.feature_flag_service.modules.audit.AuditLogService;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.cache.EvaluationCacheInvalidator;
 import com.shubhamkadam.feature_flag_service.modules.membership.MembershipRole;
 import com.shubhamkadam.feature_flag_service.modules.project.Project;
 import com.shubhamkadam.feature_flag_service.modules.project.ProjectRepository;
@@ -32,6 +33,7 @@ public class EnvironmentServiceImpl implements EnvironmentService {
     private final ApiKeyGenerator apiKeyGenerator;
     private final JwtService jwtService;
     private final AuditLogService auditLogService;
+    private final EvaluationCacheInvalidator evaluationCacheInvalidator;
     private final ObjectMapper objectMapper = new ObjectMapper()
         .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
@@ -198,6 +200,9 @@ public class EnvironmentServiceImpl implements EnvironmentService {
 
         environment.setDeletedAt(OffsetDateTime.now());
         Environment savedEnvironment = environmentRepository.save(environment);
+
+        evaluationCacheInvalidator.evictEnvironmentAfterCommit(environmentId);
+
         log.info("Deleted environment {} in project {}", environmentId, projectId);
 
         try {

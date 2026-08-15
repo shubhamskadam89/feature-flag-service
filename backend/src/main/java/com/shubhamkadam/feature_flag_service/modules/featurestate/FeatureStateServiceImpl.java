@@ -6,6 +6,7 @@ import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundExceptio
 import com.shubhamkadam.feature_flag_service.modules.audit.AuditLogService;
 import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.cache.EvaluationCacheInvalidator;
 import com.shubhamkadam.feature_flag_service.modules.feature.Feature;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureRepository;
 import com.shubhamkadam.feature_flag_service.modules.membership.MembershipRole;
@@ -32,6 +33,7 @@ public class FeatureStateServiceImpl implements FeatureStateService {
     private final JwtService jwtService;
     private final FeatureStateMapper featureStateMapper;
     private final AuditLogService auditLogService;
+    private final EvaluationCacheInvalidator evaluationCacheInvalidator;
     private final ObjectMapper objectMapper = new ObjectMapper()
         .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
@@ -117,6 +119,8 @@ public class FeatureStateServiceImpl implements FeatureStateService {
         featureState.setUpdatedAt(OffsetDateTime.now());
 
         FeatureState savedFeatureState = featureStateRepository.save(featureState);
+
+        evaluationCacheInvalidator.evictAfterCommit(environmentId, featureKey);
 
         log.info(
             "Updated feature state for feature '{}' in environment {} to {} by user {}",
