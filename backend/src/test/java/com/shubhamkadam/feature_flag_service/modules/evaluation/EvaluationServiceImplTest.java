@@ -121,4 +121,76 @@ class EvaluationServiceImplTest {
             .isInstanceOf(BadRequestException.class)
             .hasMessageContaining("Unsupported feature type");
     }
+
+    @Test
+    void evaluateBulk_happyPath_returnsCorrectOrderedResultsAndQueriesDbOnce() {
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(ENV_ID)).thenReturn(Optional.of(environmentA));
+
+        UUID checkoutId = UUID.randomUUID();
+        UUID darkModeId = UUID.randomUUID();
+        UUID newDashboardId = UUID.randomUUID();
+
+        // Database results returned in whatever order (e.g. alphabetical)
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(ENV_ID)).thenReturn(
+            List.of(
+                new FeatureEvaluationData(checkoutId, "checkout", FeatureType.BOOLEAN, true, null, null),
+                new FeatureEvaluationData(darkModeId, "dark-mode", FeatureType.BOOLEAN, false, null, null),
+                new FeatureEvaluationData(newDashboardId, "new-dashboard", FeatureType.BOOLEAN, null, null, null)
+            )
+        );
+
+        // Request keys in a specific non-alphabetical order
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("dark-mode", "checkout", "new-dashboard"));
+        BulkEvaluationResponse response = service.evaluateBulk(ENV_ID, request);
+
+        // Verification 1: Correct evaluations
+        // dark-mode -> false, checkout -> true, new-dashboard -> false (sparse default)
+        assertThat(response.results()).containsExactly(
+            new EvaluationResult("dark-mode", false),
+            new EvaluationResult("checkout", true),
+            new EvaluationResult("new-dashboard", false)
+        );
+
+        // Verification 2: Repository called exactly once
+        verify(mockEvaluationRepo, org.mockito.Mockito.times(1)).findAllEvaluationDataByEnvironmentId(ENV_ID);
+    }
+
+    @Test
+    void evaluateBulk_whenKeyIsMissingInProject_throws() {
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(ENV_ID)).thenReturn(Optional.of(environmentA));
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(ENV_ID)).thenReturn(
+            List.of(new FeatureEvaluationData(FEATURE_ID, "checkout", FeatureType.BOOLEAN, true, null, null))
+        );
+
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout", "missing-flag"));
+        assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request))
+            .isInstanceOf(ResourceNotFoundException.class)
+            .hasMessageContaining("missing-flag");
+    }
+
+    @Test
+    void evaluateBulk_whenFeatureTypeIsUnsupported_throws() {
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(ENV_ID)).thenReturn(Optional.of(environmentA));
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(ENV_ID)).thenReturn(
+            List.of(
+                new FeatureEvaluationData(FEATURE_ID, "checkout", FeatureType.BOOLEAN, true, null, null),
+                new FeatureEvaluationData(UUID.randomUUID(), "unsupported-flag", FeatureType.STRING, true, null, null)
+            )
+        );
+
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout", "unsupported-flag"));
+        assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request))
+            .isInstanceOf(BadRequestException.class)
+            .hasMessageContaining("Unsupported feature type");
+    }
+
+    @Test
+    void evaluateBulk_whenEnvironmentNotFound_throws() {
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(ENV_ID)).thenReturn(Optional.empty());
+
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout"));
+        assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request)).isInstanceOf(ResourceNotFoundException.class);
+
+        verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
+    }
 }

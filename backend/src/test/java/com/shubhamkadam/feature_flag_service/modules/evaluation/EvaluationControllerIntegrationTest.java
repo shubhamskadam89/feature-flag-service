@@ -2,6 +2,7 @@ package com.shubhamkadam.feature_flag_service.modules.evaluation;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -20,12 +21,15 @@ import com.shubhamkadam.feature_flag_service.modules.user.User;
 import com.shubhamkadam.feature_flag_service.modules.user.UserRepository;
 import com.shubhamkadam.feature_flag_service.security.ApiKeyGenerator;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -299,5 +303,159 @@ class EvaluationControllerIntegrationTest {
         mockMvc
             .perform(get(evaluateUrl(envA, "checkout")).header("X-Api-Key", plaintextKeyA))
             .andExpect(status().isNotFound());
+    }
+
+    private String bulkEvaluateUrl(Environment env) {
+        return "/api/v1/evaluate/environments/" + env.getId() + "/bulk";
+    }
+
+    @Test
+    void evaluateBulk_withValidKeyAndMultipleFeatures_returns200AndPreservesOrder() throws Exception {
+        Feature checkout = activeFeature(projectA, "checkout");
+        enableFeature(checkout, envA);
+
+        Feature darkMode = activeFeature(projectA, "dark-mode");
+        // disabled by default
+
+        Feature newDashboard = activeFeature(projectA, "new-dashboard");
+        // unconfigured (missing state)
+
+        BulkEvaluationRequest requestBody = new BulkEvaluationRequest(
+            List.of("new-dashboard", "checkout", "dark-mode")
+        );
+
+        mockMvc
+            .perform(
+                post(bulkEvaluateUrl(envA))
+                    .header("X-Api-Key", plaintextKeyA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(requestBody))
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.results", Matchers.hasSize(3)))
+            .andExpect(jsonPath("$.data.results[0].key").value("new-dashboard"))
+            .andExpect(jsonPath("$.data.results[0].enabled").value(false))
+            .andExpect(jsonPath("$.data.results[1].key").value("checkout"))
+            .andExpect(jsonPath("$.data.results[1].enabled").value(true))
+            .andExpect(jsonPath("$.data.results[2].key").value("dark-mode"))
+            .andExpect(jsonPath("$.data.results[2].enabled").value(false));
+    }
+
+    @Test
+    void evaluateBulk_withUnknownKey_returns404() throws Exception {
+        activeFeature(projectA, "checkout");
+        BulkEvaluationRequest requestBody = new BulkEvaluationRequest(List.of("checkout", "nonexistent"));
+
+        mockMvc
+            .perform(
+                post(bulkEvaluateUrl(envA))
+                    .header("X-Api-Key", plaintextKeyA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(requestBody))
+            )
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void evaluateBulk_withDuplicateKeys_returns400() throws Exception {
+        BulkEvaluationRequest requestBody = new BulkEvaluationRequest(List.of("checkout", "checkout"));
+
+        mockMvc
+            .perform(
+                post(bulkEvaluateUrl(envA))
+                    .header("X-Api-Key", plaintextKeyA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(requestBody))
+            )
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value(Matchers.containsString("Duplicate")));
+    }
+
+    @Test
+    void evaluateBulk_withTooManyKeys_returns400() throws Exception {
+        java.util.List<String> keys = new java.util.ArrayList<>();
+        for (int i = 0; i < 101; i++) {
+            keys.add("key-" + i);
+        }
+        BulkEvaluationRequest requestBody = new BulkEvaluationRequest(keys);
+
+        mockMvc
+            .perform(
+                post(bulkEvaluateUrl(envA))
+                    .header("X-Api-Key", plaintextKeyA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(requestBody))
+            )
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value(Matchers.containsString("100 keys")));
+    }
+
+    @Test
+    void evaluateBulk_withEmptyKeys_returns400() throws Exception {
+        BulkEvaluationRequest requestBody = new BulkEvaluationRequest(List.of());
+
+        mockMvc
+            .perform(
+                post(bulkEvaluateUrl(envA))
+                    .header("X-Api-Key", plaintextKeyA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(requestBody))
+            )
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value(Matchers.containsString("empty")));
+    }
+
+    @Test
+    void evaluateBulk_withMalformedRequest_returns400() throws Exception {
+        mockMvc
+            .perform(
+                post(bulkEvaluateUrl(envA))
+                    .header("X-Api-Key", plaintextKeyA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"keys\": [\"checkout\", invalid-json]}")
+            )
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value(Matchers.containsString("Malformed JSON")));
+    }
+
+    @Test
+    void evaluateBulk_withoutApiKey_returns401() throws Exception {
+        BulkEvaluationRequest requestBody = new BulkEvaluationRequest(List.of("checkout"));
+
+        mockMvc
+            .perform(
+                post(bulkEvaluateUrl(envA))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(requestBody))
+            )
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void evaluateBulk_withInvalidApiKey_returns401() throws Exception {
+        BulkEvaluationRequest requestBody = new BulkEvaluationRequest(List.of("checkout"));
+
+        mockMvc
+            .perform(
+                post(bulkEvaluateUrl(envA))
+                    .header("X-Api-Key", "invalid-key")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(requestBody))
+            )
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void evaluateBulk_withKeyFromDifferentEnvironment_returns401() throws Exception {
+        BulkEvaluationRequest requestBody = new BulkEvaluationRequest(List.of("checkout"));
+
+        mockMvc
+            .perform(
+                post(bulkEvaluateUrl(envA))
+                    .header("X-Api-Key", plaintextKeyB) // Key for Env B, path points to Env A
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(requestBody))
+            )
+            .andExpect(status().isUnauthorized());
     }
 }

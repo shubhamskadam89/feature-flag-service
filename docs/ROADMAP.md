@@ -53,12 +53,13 @@ These may become extensions later, but only once the core system is stable and a
 - [x] Audit events on every mutation
 
 ### Phase 4 — Evaluation Engine
-- [ ] Bulk evaluation API
+- [x] Bulk evaluation API
 - [ ] Redis cache-aside, Postgres fallback on miss
 - [ ] Cache invalidation on mutation
 - [ ] Deterministic percentage rollout
-- [ ] Evaluation tests (including concurrency)
+- [x] Evaluation tests (including concurrency)
 - [ ] Performance benchmarks: throughput, p50/p95/p99 latency, cache hit rate
+
 
 ### Phase 5 — Public Service Hardening
 - [ ] Rate limiting (evaluation, login, registration)

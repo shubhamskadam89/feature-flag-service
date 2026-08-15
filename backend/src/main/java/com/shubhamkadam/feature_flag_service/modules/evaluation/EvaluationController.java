@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -61,6 +63,38 @@ public class EvaluationController {
 
         return ResponseEntity.ok(
             ApiResponse.success(200, "Feature evaluated successfully", result, request.getRequestURI())
+        );
+    }
+
+    /**
+     * Evaluates multiple feature flags in bulk for the authenticated environment.
+     *
+     * @param environmentId the environment identifier (must match the API key's environment)
+     * @param request       the bulk request payload containing the list of keys
+     * @param httpRequest   the HTTP request carrying the resolved environment attribute
+     * @return {@code 200} with {@link BulkEvaluationResponse}; {@code 400} if request validation fails;
+     *         {@code 404} if any requested feature does not exist in this environment's project
+     */
+    @PostMapping("/environments/{environmentId}/bulk")
+    public ResponseEntity<ApiResponse<BulkEvaluationResponse>> evaluateBulk(
+        @PathVariable("environmentId") String environmentId,
+        @RequestBody BulkEvaluationRequest request,
+        HttpServletRequest httpRequest
+    ) {
+        Environment environment = (Environment) httpRequest.getAttribute(
+            ApiKeyAuthenticationFilter.RESOLVED_ENVIRONMENT_ATTR
+        );
+
+        log.info(
+            "Bulk evaluating {} features for environment {}",
+            request.keys() != null ? request.keys().size() : 0,
+            environment.getId()
+        );
+
+        BulkEvaluationResponse result = evaluationService.evaluateBulk(environment.getId(), request);
+
+        return ResponseEntity.ok(
+            ApiResponse.success(200, "Features evaluated in bulk successfully", result, httpRequest.getRequestURI())
         );
     }
 }
