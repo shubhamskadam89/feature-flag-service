@@ -198,4 +198,47 @@ class EvaluationServiceImplTest {
 
         verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
     }
+
+    @Test
+    void shouldReturnCachedResultWithoutQueryingRepository() {
+        UUID environmentId = UUID.randomUUID();
+        String featureKey = "checkout";
+
+        EvaluationResult cachedResult = new EvaluationResult(featureKey, true);
+
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
+            Optional.of(org.mockito.Mockito.mock(Environment.class))
+        );
+
+        when(evaluationCache.get(environmentId, featureKey)).thenReturn(Optional.of(cachedResult));
+
+        EvaluationResult result = service.evaluate(environmentId, featureKey);
+
+        assertThat(result).isEqualTo(cachedResult);
+
+        verify(evaluationCache).get(environmentId, featureKey);
+
+        verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
+    }
+
+    @Test
+    void shouldReturnCachedFalseResultWithoutQueryingRepository() {
+        UUID environmentId = UUID.randomUUID();
+        String featureKey = "checkout";
+
+        EvaluationResult cachedResult = new EvaluationResult(featureKey, false);
+
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
+            Optional.of(org.mockito.Mockito.mock(Environment.class))
+        );
+
+        when(evaluationCache.get(environmentId, featureKey)).thenReturn(Optional.of(cachedResult));
+
+        EvaluationResult result = service.evaluate(environmentId, featureKey);
+
+        assertThat(result).isEqualTo(cachedResult);
+        assertThat(result.enabled()).isFalse();
+
+        verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
+    }
 }
