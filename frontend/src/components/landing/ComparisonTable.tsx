@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, X, Zap } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
 export const ComparisonTable: React.FC = () => {
   return (
@@ -38,7 +38,7 @@ export const ComparisonTable: React.FC = () => {
                 </th>
                 <th className="py-4 px-6 text-xs font-mono font-bold uppercase tracking-widest text-[#131311] bg-[#c6fd50] rounded-t-xl w-1/4">
                   <div className="flex items-center gap-1.5 font-black text-sm">
-                    <Zap className="w-4 h-4 fill-current" /> Flags.Dev
+                    <img src="/logo-icon.png" className="w-4 h-4 object-contain" alt="" /> Flags.Dev
                   </div>
                 </th>
               </tr>

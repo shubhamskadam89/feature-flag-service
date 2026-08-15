@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Zap, ArrowUpRight, Menu, X, Timer } from 'lucide-react';
+import { ArrowUpRight, Menu, X, Timer } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -24,8 +24,8 @@ export const Navbar: React.FC = () => {
         
         {/* Brand logo */}
         <a href="#" className="flex items-center gap-2 group">
-          <div className="w-7 h-7 bg-[#c6fd50] text-[#131311] rounded-full flex items-center justify-center font-black text-xs font-mono group-hover:scale-105 transition-transform">
-            <Zap className="w-3.5 h-3.5 fill-current" />
+          <div className="w-7 h-7 bg-[#c6fd50] rounded-full flex items-center justify-center p-1 group-hover:scale-105 transition-transform overflow-hidden">
+            <img src="/logo-icon.png" className="w-full h-full object-contain" alt="Flags.dev Logo" />
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">

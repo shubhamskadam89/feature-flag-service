@@ -278,8 +278,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
       {/* Brand logo & mobile close option */}
       <div className="mb-8 flex justify-between items-center px-2">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-[#131311] flex items-center justify-center text-[#c6fd50] font-black text-xs">
-            ⚡
+          <div className="w-6 h-6 rounded-md bg-[#131311] flex items-center justify-center p-1 overflow-hidden">
+            <img src="/logo-icon.png" className="w-full h-full object-contain filter invert" alt="Flags.dev Logo" />
           </div>
           <div>
             <h1 className="font-display font-black text-sm text-[#131311] tracking-tight">FLAGS.DEV</h1>
