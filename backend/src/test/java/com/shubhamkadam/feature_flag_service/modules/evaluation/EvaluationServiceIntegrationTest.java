@@ -18,6 +18,7 @@ import com.shubhamkadam.feature_flag_service.modules.project.ProjectRepository;
 import com.shubhamkadam.feature_flag_service.modules.user.User;
 import com.shubhamkadam.feature_flag_service.modules.user.UserRepository;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -327,5 +328,113 @@ class EvaluationServiceIntegrationTest {
 
         assertThat(cachedEnabled.enabled()).isTrue();
         assertThat(cachedDisabled.enabled()).isFalse();
+    }
+
+    @Test
+    void evaluateBulk_firstRequestReadsDatabaseAndSecondRequestUsesCache() {
+        Feature checkout = activeFeature(projectA, "checkout");
+        Feature payments = activeFeature(projectA, "payments");
+        Feature search = activeFeature(projectA, "search");
+
+        stateFor(checkout, envA, true);
+        stateFor(payments, envA, false);
+        stateFor(search, envA, true);
+
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout", "payments", "search"));
+
+        // First request:
+        // Redis MISS -> PostgreSQL -> Redis PUT
+        BulkEvaluationResponse first = evaluationService.evaluateBulk(envA.getId(), request);
+
+        assertThat(first.results()).containsExactly(
+            new EvaluationResult("checkout", true),
+            new EvaluationResult("payments", false),
+            new EvaluationResult("search", true)
+        );
+
+        assertThat(evaluationRedisTemplate.hasKey("evaluation:" + envA.getId() + ":checkout")).isTrue();
+        assertThat(evaluationRedisTemplate.hasKey("evaluation:" + envA.getId() + ":payments")).isTrue();
+        assertThat(evaluationRedisTemplate.hasKey("evaluation:" + envA.getId() + ":search")).isTrue();
+
+        // Change PostgreSQL after the values have been cached.
+        FeatureState checkoutState = featureStateRepository
+            .findByFeatureIdAndEnvironmentId(checkout.getId(), envA.getId())
+            .orElseThrow();
+        checkoutState.setEnabled(false);
+
+        FeatureState paymentsState = featureStateRepository
+            .findByFeatureIdAndEnvironmentId(payments.getId(), envA.getId())
+            .orElseThrow();
+        paymentsState.setEnabled(true);
+
+        FeatureState searchState = featureStateRepository
+            .findByFeatureIdAndEnvironmentId(search.getId(), envA.getId())
+            .orElseThrow();
+        searchState.setEnabled(false);
+
+        featureStateRepository.saveAll(List.of(checkoutState, paymentsState, searchState));
+        featureStateRepository.flush();
+
+        // Second request:
+        // Redis HIT -> should return the ORIGINAL cached values.
+        BulkEvaluationResponse second = evaluationService.evaluateBulk(envA.getId(), request);
+
+        assertThat(second.results()).containsExactly(
+            new EvaluationResult("checkout", true),
+            new EvaluationResult("payments", false),
+            new EvaluationResult("search", true)
+        );
+    }
+
+    @Test
+    void evaluateBulk_mixedCacheHitsAndMisses_resolvesOnlyMissingValues() {
+        Feature checkout = activeFeature(projectA, "checkout");
+        Feature payments = activeFeature(projectA, "payments");
+        Feature search = activeFeature(projectA, "search");
+
+        stateFor(checkout, envA, true);
+        stateFor(payments, envA, false);
+        stateFor(search, envA, false);
+
+        // Pre-populate Redis for checkout and search.
+        evaluationRedisTemplate
+            .opsForValue()
+            .set(
+                "evaluation:" + envA.getId() + ":checkout",
+                new EvaluationResult("checkout", true),
+                1,
+                java.util.concurrent.TimeUnit.MINUTES
+            );
+
+        evaluationRedisTemplate
+            .opsForValue()
+            .set(
+                "evaluation:" + envA.getId() + ":search",
+                new EvaluationResult("search", false),
+                1,
+                java.util.concurrent.TimeUnit.MINUTES
+            );
+
+        BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout", "payments", "search"));
+
+        BulkEvaluationResponse response = evaluationService.evaluateBulk(envA.getId(), request);
+
+        assertThat(response.results()).containsExactly(
+            new EvaluationResult("checkout", true),
+            new EvaluationResult("payments", false),
+            new EvaluationResult("search", false)
+        );
+
+        // Only payments should have required database resolution.
+        assertThat(evaluationRedisTemplate.hasKey("evaluation:" + envA.getId() + ":checkout")).isTrue();
+        assertThat(evaluationRedisTemplate.hasKey("evaluation:" + envA.getId() + ":search")).isTrue();
+        assertThat(evaluationRedisTemplate.hasKey("evaluation:" + envA.getId() + ":payments")).isTrue();
+
+        // Verify the newly resolved MISS was cached correctly.
+        EvaluationResult cachedPayments = evaluationRedisTemplate
+            .opsForValue()
+            .get("evaluation:" + envA.getId() + ":payments");
+
+        assertThat(cachedPayments).isEqualTo(new EvaluationResult("payments", false));
     }
 }
