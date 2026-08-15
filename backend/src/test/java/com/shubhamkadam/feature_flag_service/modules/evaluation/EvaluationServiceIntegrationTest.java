@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +53,9 @@ class EvaluationServiceIntegrationTest {
     @Autowired
     private FeatureStateRepository featureStateRepository;
 
+    @Autowired
+    private RedisTemplate<String, EvaluationResult> evaluationRedisTemplate;
+
     // ── shared fixtures ───────────────────────────────────────────────────────
 
     private Organization org;
@@ -62,6 +66,8 @@ class EvaluationServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        evaluationRedisTemplate.getConnectionFactory().getConnection().serverCommands().flushDb();
+
         owner = userRepository.save(
             User.builder()
                 .id(UUID.randomUUID())
@@ -145,6 +151,34 @@ class EvaluationServiceIntegrationTest {
 
         assertThat(result.key()).isEqualTo("checkout");
         assertThat(result.enabled()).isTrue();
+    }
+
+    @Test
+    void evaluate_firstRequestPopulatesCache_secondRequestUsesCachedResult() {
+        Feature checkout = activeFeature(projectA, "checkout");
+        FeatureState state = stateFor(checkout, envA, true);
+
+        // First evaluation:
+        // Redis MISS -> PostgreSQL -> Redis PUT
+        EvaluationResult first = evaluationService.evaluate(envA.getId(), "checkout");
+
+        assertThat(first.key()).isEqualTo("checkout");
+        assertThat(first.enabled()).isTrue();
+
+        String redisKey = "evaluation:" + envA.getId() + ":checkout";
+
+        assertThat(evaluationRedisTemplate.hasKey(redisKey)).isTrue();
+
+        // Change PostgreSQL state after the cache has been populated.
+        state.setEnabled(false);
+        featureStateRepository.saveAndFlush(state);
+
+        // Second evaluation:
+        // Redis HIT -> should still return the cached TRUE.
+        EvaluationResult second = evaluationService.evaluate(envA.getId(), "checkout");
+
+        assertThat(second.key()).isEqualTo("checkout");
+        assertThat(second.enabled()).isTrue();
     }
 
     // ── 2. feature from another project → not found ───────────────────────────
