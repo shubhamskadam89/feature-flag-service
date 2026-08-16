@@ -1,177 +1,200 @@
 # flags.dev — Product Thesis
 
-## 1. Why flags.dev exists
+## 1. Purpose
 
-Feature flags are usually introduced as a release-control mechanism: deploy code safely, keep a capability disabled, target an audience, and gradually increase exposure.
+flags.dev is a feature-flag platform designed to help engineering teams make better release decisions.
 
-That solves an important engineering problem, but the flag itself is only the mechanism. The harder product question is what the release actually means:
+Feature flags provide control over feature exposure. flags.dev extends that control with context-aware understanding of release exposure: who is targeted, how much of the available audience is affected, how configuration changes alter exposure, and why an individual context receives a variation.
 
-> **Who will receive it, why will they receive it, how large is the impact, and what changes if we alter the release?**
-
-flags.dev is being built to help developers and businesses answer those questions without requiring them to assemble a separate analytics workflow for every release decision.
-
-The product thesis is therefore:
-
-> **flags.dev helps teams make better feature-release decisions by combining deterministic flag evaluation with context-aware release intelligence.**
+> **Don't just control your rollout. Understand its impact.**
 
 ---
 
-## 2. The problem
+## 2. The Problem
 
-A conventional feature-flag workflow looks like:
+A conventional feature-release workflow is:
 
 ```text
 Create flag
     ↓
 Define targeting
     ↓
-Set rollout percentage
+Set rollout
     ↓
 Evaluate
     ↓
-User receives variation
+Release
 ```
 
-This answers **whether** a context receives a feature.
+The evaluator can determine whether a context receives a variation. The harder release questions are:
 
-It does not automatically answer questions such as:
+- Who will receive this release?
+- How large is the matching audience?
+- What does a 15% rollout mean for this audience?
+- What changes if the rollout moves from 15% to 25%?
+- How does changing a targeting rule alter exposure?
+- Why did a specific context receive a variation?
 
-- How large is the audience matching this targeting rule?
-- What does a 15% rollout mean for this particular audience?
-- What happens if the rollout changes from 15% to 25%?
-- How much does adding another targeting condition shrink the audience?
-- Why did a particular context receive this variation?
-- Is this release exposing a surprisingly large or important population?
-- If I want approximately 50,000 contexts exposed, what rollout percentage should I consider?
-
-Teams with mature analytics infrastructure can answer some of these questions elsewhere. Smaller teams often cannot justify building an analytics/data stack solely to understand the impact of feature releases.
-
-flags.dev should make the release-specific questions easy out of the box.
+Teams with mature data infrastructure can answer parts of these questions elsewhere. flags.dev aims to make release-specific questions useful out of the box without becoming a replacement for that infrastructure.
 
 ---
 
-## 3. What flags.dev is — and is not
+## 3. Initial Customer Profile
 
-### flags.dev is
+### Primary ICP
 
-- A multi-tenant feature-flag platform.
-- A deterministic evaluation engine.
-- A context-native targeting system.
-- A release-impact intelligence layer built around customer-provided context data.
-- A developer-first system with a strong emphasis on explainability and predictable behavior.
-- A platform that can expose the evaluation contract through REST, a Java SDK, and potentially OpenFeature.
+**Engineering-led teams shipping frequently where rollout mistakes have meaningful customer or business consequences.**
 
-### flags.dev is not
+### Strongest initial segment
 
-- A clone of LaunchDarkly, Unleash, Flagsmith, or another existing platform.
-- A generic BI platform.
-- A data warehouse.
-- A customer-data platform (CDP).
-- A demographic-data provider.
-- A replacement for a company's existing analytics stack.
+**Growing and mid-market B2B SaaS companies, particularly multi-tenant products.**
 
-The goal is not to reproduce every capability offered by mature feature-management vendors. The goal is to build a deliberately focused system around a different product emphasis: **understanding release impact.**
-
----
-
-## 4. Product positioning
-
-The initial category is feature flags, but the product promise is broader.
-
-### Traditional framing
-
-> Turn features on safely.
-
-### flags.dev framing
-
-> **Understand what turning a feature on will do.**
-
-Feature flags remain the control mechanism. flags.dev adds context and release intelligence around that mechanism.
-
-A concise positioning statement:
-
-> **flags.dev — feature flags for smarter releases.**
-
-A stronger product promise:
-
-> **Know who you're releasing to, why they qualify, how large the impact is, and what changes before you change production exposure.**
-
-This positioning should guide both product design and future marketing.
-
----
-
-## 5. Core product pillars
-
-### 5.1 Deterministic evaluation
-
-The same evaluation context and flag configuration should produce a predictable result.
-
-Percentage rollout must be deterministic rather than randomly reshuffling users between requests.
-
-This establishes the correctness foundation for everything above the evaluator.
+These systems commonly evaluate releases using multiple dimensions such as:
 
 ```text
-Context + flag configuration
-            ↓
-      deterministic decision
-            ↓
-         variation
+user
+tenant
+plan
+role
+country
+platform
+environment
 ```
 
-### 5.2 Explainable decisions
+As targeting becomes more specific, understanding exposure becomes more valuable than a simple rollout percentage.
 
-A developer should be able to understand why a context received a particular variation.
+### Likely champions
 
-Conceptually:
+- Staff / Principal Engineers
+- Platform or Developer Experience engineers
+- Engineering Managers
+- Engineers responsible for production releases
 
-```text
-Context
-   ↓
-Matched targeting
-   ↓
-Matched rollout / rule
-   ↓
-Variation
-```
-
-The system should eventually be able to expose an evaluation reason without forcing developers to inspect implementation details or logs.
-
-### 5.3 Release intelligence
-
-Customer-provided context data can become useful beyond individual evaluation.
-
-The same context population can support release-specific questions such as:
-
-```text
-Targeting rule
-      ↓
-Eligible context population
-      ↓
-Rollout percentage
-      ↓
-Projected exposure
-      ↓
-Release impact
-```
-
-This is not intended to become generic analytics. The analysis should stay tightly connected to feature releases, targeting, and rollout decisions.
+This is an initial market hypothesis and requires validation with real users.
 
 ---
 
-## 6. Context is a first-class domain concept
+## 4. Trigger Event
+
+The strongest trigger is a production release decision where the team needs to understand the consequences before changing exposure.
+
+Typical cases include:
+
+- Increasing rollout from 10% to 25%.
+- Adding or removing a targeting condition.
+- Investigating why a customer received a feature.
+- Investigating unexpected exposure after a release.
+
+The underlying question is:
+
+> **What will this release actually affect?**
+
+---
+
+## 5. Product Thesis
+
+The product thesis is:
+
+> **flags.dev makes release exposure predictable, inspectable, and explainable by combining feature-flag evaluation with customer-provided context.**
+
+Feature flags remain the control mechanism. The differentiated product experience is the ability to understand the consequences of release configuration.
+
+```mermaid
+flowchart LR
+    A[Release configuration] --> B[Context]
+    B --> C[Targeting]
+    C --> D[Deterministic evaluation]
+    D --> E[Exposure]
+    E --> F[Release decision]
+    C --> G[Audience analysis]
+    G --> E
+    D --> H[Evaluation explanation]
+```
+
+---
+
+## 6. Core Product Questions
+
+flags.dev should progressively answer four questions:
+
+| Question | Product capability |
+|---|---|
+| **Who?** | Audience and targeting analysis |
+| **How much?** | Exposure estimation |
+| **What if?** | Rollout and targeting simulation |
+| **Why?** | Explainable evaluation |
+
+These capabilities are valuable because they are directly connected to a specific release configuration.
+
+A generic query such as:
+
+```sql
+SELECT COUNT(*)
+FROM users
+WHERE country = 'IN'
+  AND age BETWEEN 21 AND 30;
+```
+
+is not the product. Customers can already perform generic analysis in their own data stack.
+
+The product value comes from combining that information with the actual flag, targeting rules, and rollout configuration.
+
+---
+
+## 7. Release Intelligence
+
+**Release Intelligence** is the long-term product direction, not a generic analytics category.
+
+### Release Impact Preview
+
+```text
+Targeting:
+country = IN
+age = 21–30
+plan = PRO
+
+Rollout: 15%
+
+Matching contexts:       1,200,000
+Projected exposure:        ~180,000
+```
+
+### What-if simulation
+
+```text
+Current rollout       15%       ~180K
+Proposed rollout      25%       ~300K
+Additional exposure             ~120K
+```
+
+### Targeting impact
+
+```text
+Current targeting       1.2M
+Add plan = PRO           420K
+Audience change          -65%
+```
+
+### Explainable evaluation
+
+```text
+Context: user-123
+        ↓
+country = IN          ✓
+age = 26               ✓
+Matched targeting rule
+Rollout bucket within threshold
+        ↓
+Variation: ON
+```
+
+The goal is not generic analytics. The goal is to make release decisions easier to understand and operate.
+
+---
+
+## 8. Context as a First-Class Domain Concept
 
 A context represents the entity being evaluated.
-
-A minimal context model is expected to contain:
-
-```text
-kind
-key
-name (optional)
-attributes
-```
-
-For example:
 
 ```json
 {
@@ -186,20 +209,20 @@ For example:
 }
 ```
 
-The model should remain extensible enough to support organizations, devices, and other entity types later without redesigning evaluation around a hard-coded `userId`.
+The model must remain extensible beyond users to support entities such as organizations and devices.
 
-Contexts serve two related but distinct purposes:
+Contexts serve two related purposes:
 
-1. **Evaluation input** — determine what variation a particular context receives.
-2. **Release intelligence input** — where the customer enables it, analyze a customer-provided context population to estimate and understand release impact.
+1. **Evaluation input** — determine the variation for an individual context.
+2. **Release-analysis input** — where enabled, analyze a customer-provided context population.
 
 ---
 
-## 7. Customer-system agnostic by design
+## 9. Customer-System Agnostic
 
 flags.dev must not require direct access to a customer's application database.
 
-We should not design around:
+The platform should not be designed around database-specific integrations such as:
 
 ```text
 flags.dev → customer PostgreSQL
@@ -207,253 +230,110 @@ flags.dev → customer MongoDB
 flags.dev → customer DynamoDB
 ```
 
-That would couple the platform to customer infrastructure, create security and operational barriers, and move flags.dev toward becoming a data-integration product.
-
 Instead, the boundary is a context contract:
 
-```text
-Customer system
-      ↓
-Context contract
-      ↓
-flags.dev
+```mermaid
+flowchart LR
+    A[Customer system] --> B[Context contract]
+    B --> C[flags.dev]
+    C --> D[Evaluation]
+    C --> E[Release analysis]
 ```
 
-The customer decides how its data reaches flags.dev. Future ingestion mechanisms may include APIs, SDKs, batch imports, or other integrations, but the core platform should not need to understand the customer's source database.
+Customers control how relevant context data reaches flags.dev. Future mechanisms may include SDKs, APIs, batch ingestion, or other integrations, but the core platform must not depend on the customer's storage technology.
 
-This is important for mass adoption: **audience intelligence should enhance the product, not become a prerequisite for basic flag evaluation.**
+**Audience intelligence should enhance adoption, not become a prerequisite for basic evaluation.**
 
 ---
 
-## 8. Audience data: what flags.dev can know
+## 10. Audience Data and Trust
 
-We must distinguish several kinds of data.
+flags.dev must distinguish between data it receives, data it derives, and estimates it produces.
 
-### Customer-provided context data
+### Customer-provided context
 
-This is the primary data source for audience intelligence.
+The primary source for targeting and release analysis.
 
-The customer provides context attributes that are useful for evaluation and, where enabled, release analysis.
+### Evaluation metadata
 
-### flags.dev evaluation metadata
+flags.dev may generate metadata such as:
 
-flags.dev can generate operational metadata such as:
-
-- flag
-- environment
+- flag and environment
 - context identity
-- evaluation result
-- evaluation reason
+- evaluation result and reason
 - rollout bucket
-- source / SDK
+- SDK/source
 - evaluation timestamp
-
-This supports explainability, debugging, and operational analysis.
 
 ### External demographic data
 
-External population or demographic datasets are not part of the core product model. flags.dev should not pretend to know a customer's total market population unless that information is explicitly provided by the customer or a future integration.
+External population or demographic datasets are not part of the core product model. flags.dev must not imply knowledge of a customer's total market population unless that information is explicitly supplied through a future supported source.
 
-This keeps audience estimates technically honest.
+### Known population vs total population
 
----
+If flags.dev has access to 2 million customer-provided contexts and 400,000 match a rule, the product should communicate:
 
-## 9. Known audience vs total customer population
+> **400,000 available contexts match this targeting rule.**
 
-Audience analysis must clearly communicate what the numbers represent.
+It should not claim that the customer's total user population is 400,000 unless the underlying data is authoritative and complete.
 
-If flags.dev has access to 2 million customer-provided contexts and 400,000 match a targeting rule, the product should say:
-
-> **400,000 known/available contexts match this targeting rule.**
-
-It should not claim:
-
-> "Your company has exactly 400,000 eligible users."
-
-unless the customer has provided a complete authoritative population and we can establish that guarantee.
-
-This distinction matters for product trust.
+Estimates must identify their basis, freshness, and limitations where relevant.
 
 ---
 
-## 10. Release Intelligence: the differentiated layer
+## 11. Product Boundaries
 
-The context query itself is not the product.
+flags.dev is **not** intended to become:
 
-A generic query such as:
+- A generic BI platform
+- A data warehouse
+- A customer-data platform (CDP)
+- A customer database
+- A replacement for product analytics
+- A generic experimentation platform
+- A demographic-data provider
+- A database-integration platform
+- A feature-count clone of mature vendors
+- An AI product without a concrete release problem
 
-```sql
-SELECT COUNT(*)
-FROM users
-WHERE country = 'IN'
-AND age BETWEEN 21 AND 30;
-```
+The product boundary is:
 
-is something a customer can already do in its own data stack.
+> **Does this capability help a developer or business understand, control, or explain release exposure?**
 
-flags.dev creates value by combining audience information with **the actual release configuration**.
-
-### Release Impact Preview
-
-Given:
-
-```text
-country = IN
-age = 21–30
-plan = PRO
-rollout = 15%
-```
-
-flags.dev should eventually be able to show:
-
-```text
-Matching context population     1,200,000
-Rollout                               15%
-Projected exposure                 ~180,000
-```
-
-### What-if rollout simulation
-
-```text
-Current rollout       15%       ~180K
-Proposed rollout      25%       ~300K
-Additional exposure             ~120K
-```
-
-### Targeting-rule impact
-
-```text
-Current targeting      1.2M
-Add plan = PRO          420K
-Audience change         -65%
-```
-
-### Explainable evaluation
-
-```text
-Flag: new-checkout
-Context: user-123
-
-Matched: country = IN
-Matched: age = 26
-Matched rule: India + 21–30
-Rollout bucket: within threshold
-Result: ON
-```
-
-### Exposure-oriented recommendations
-
-If a customer wants approximately 50,000 contexts exposed and the eligible population is 420,000, flags.dev could eventually calculate a candidate rollout near:
-
-```text
-50,000 / 420,000 ≈ 11.9%
-```
-
-This is a release decision aid, not generic analytics.
+If not, it requires separate justification before entering the roadmap.
 
 ---
 
-## 11. The product loop
+## 12. Engineering Principles
 
-The long-term experience is:
+The product direction requires a clean separation between configuration, evaluation, and release analysis.
 
-```text
-Define release
-      ↓
-Understand audience
-      ↓
-Preview / simulate impact
-      ↓
-Roll out
-      ↓
-Observe outcome
-      ↓
-Make next release decision
-      ↓
-Repeat
+```mermaid
+flowchart TB
+    A[Control Plane] --> D[Evaluation Core]
+    B[Context Model] --> D
+    B --> E[Audience Engine]
+    C[Flag Configuration] --> D
+    D --> F[Deterministic result]
+    D --> G[Evaluation explanation]
+    E --> H[Exposure analysis]
+    H --> I[Release decision]
 ```
 
-This is the product loop we want to strengthen over time.
+Key principles:
 
-Feature flags are the mechanism that controls exposure inside this loop.
-
----
-
-## 12. Why this can matter to smaller teams
-
-Large companies may already have dedicated data engineering, analytics, experimentation, and release-management infrastructure.
-
-Smaller companies often have limited engineering capacity and still need to answer the same release questions.
-
-flags.dev should provide useful release intelligence without asking a small team to build an entire data platform first.
-
-The opportunity is not to compete with a company's warehouse or BI tooling. It is to make feature-release-specific analysis **immediately useful and operationally close to the release decision.**
+- Evaluation semantics remain deterministic and independent of customer storage technology.
+- Runtime evaluation must not depend on audience analytics being enabled.
+- Audience analysis operates on customer-controlled context data.
+- Exact evaluation results and population estimates must remain distinct.
+- Redis and other infrastructure components are implementation mechanisms, not domain contracts.
+- SDKs and future OpenFeature integration must preserve the same evaluation semantics.
 
 ---
 
-## 13. Technical thesis
+## 13. Developer Experience
 
-The product thesis creates an engineering thesis.
-
-The same domain model should support:
-
-```text
-                    flags.dev
-                        │
-        ┌───────────────┼────────────────┐
-        ▼               ▼                ▼
-   Context Model   Evaluation Core   Audience Engine
-        │               │                │
-        ▼               ▼                ▼
-  Customer data    Deterministic      Release
-                   decisions          analysis
-        │               │                │
-        └───────────────┼────────────────┘
-                        ▼
-                Release Intelligence
-```
-
-The evaluation core should remain independent from storage and infrastructure concerns where practical. Redis is an acceleration mechanism; PostgreSQL is currently the configuration source of truth. Future context storage should not leak customer-system assumptions into evaluation semantics.
-
-This separation lets us evolve:
-
-- REST evaluation
-- Java SDK
-- OpenFeature provider
-- context ingestion
-- audience indexing
-- release simulation
-
-without turning them into one tightly coupled subsystem.
-
----
-
-## 14. Differentiation strategy
-
-flags.dev should not claim that existing feature-flag platforms lack contexts, rollouts, evaluation reasons, analytics, or release tooling. Mature products already provide many of these capabilities.
-
-Our differentiation is **what we optimize for and how the pieces fit together**.
-
-We want the system to be:
-
-- evaluation-first
-- context-native
-- deterministic
-- explainable
-- release-impact aware
-- customer-system agnostic
-- developer-first
-- portable across SDKs and evaluation interfaces
-
-The goal is not feature-count competition.
-
-> **Build fewer capabilities deeply, and make each capability reinforce the release-decision loop.**
-
----
-
-## 15. Developer-facing direction
-
-The developer experience should eventually look like:
+The intended developer-facing model is:
 
 ```java
 EvaluationContext context = EvaluationContext.builder()
@@ -467,58 +347,76 @@ FlagEvaluation result =
         flags.evaluate("new-checkout", context);
 ```
 
-The Java SDK is the reference implementation. A future OpenFeature provider can expose the same evaluation semantics through a vendor-neutral interface.
+The Java SDK is the planned reference SDK. A future OpenFeature provider can expose the same semantics through a vendor-neutral interface.
 
-A formal evaluation contract and cross-language conformance vectors are desirable so that the same context and configuration produce the same result across supported clients.
+Cross-language evaluation should be supported by a formal contract and conformance tests where applicable.
 
 ---
 
-## 16. What we deliberately will not optimize for
+## 14. Product Direction
 
-We should resist adding capabilities solely because a competitor has them.
+The long-term product loop is:
 
-In particular, we should not allow the project to drift into:
+```mermaid
+flowchart LR
+    A[Define release] --> B[Understand audience]
+    B --> C[Preview impact]
+    C --> D[Roll out]
+    D --> E[Observe outcome]
+    E --> F[Make next decision]
+    F --> A
+```
 
-- generic BI
-- generic user analytics
-- a full CDP
-- demographic intelligence unrelated to releases
-- enterprise administration for its own sake
-- feature-count parity with mature vendors
-- speculative AI features without a concrete release problem
+This creates a progression:
 
-Every significant addition should be evaluated against the north-star question:
+```text
+Feature flags
+      ↓
+Exposure understanding
+      ↓
+Release simulation
+      ↓
+Better release decisions
+      ↓
+Release Intelligence
+```
+
+The product should earn the intelligence layer through trustworthy context data, deterministic evaluation, and useful release-specific analysis.
+
+---
+
+## 15. Validation Status
+
+### Established
+
+- Feature flags are a proven release-control mechanism.
+- Targeting and progressive rollout are established engineering needs.
+- Context-based targeting is a useful foundation.
+- Deterministic evaluation is a correctness requirement.
+
+### Product hypotheses
+
+- Release exposure is a strong initial product wedge.
+- Release-impact simulation will materially improve rollout decisions.
+- Explainable evaluation will reduce debugging and operational friction.
+- Growing, multi-tenant B2B SaaS teams are a strong initial customer segment.
+- Customers will provide or make available sufficient context data for useful release analysis.
+
+### Still to validate
+
+- Which customer segment has the strongest willingness to adopt and pay.
+- Which context-ingestion model provides the best balance of accuracy, privacy, cost, and integration effort.
+- How accurate exposure estimates must be before customers trust them.
+- Which release-intelligence capability becomes the strongest product wedge.
+
+This document defines the current product hypothesis; it does not claim product-market fit.
+
+---
+
+## 16. North-Star Question
+
+Every significant product decision should be evaluated against one question:
 
 > **Does this help a developer or business make a better feature-release decision?**
 
-If not, it needs a compelling separate justification or it waits.
-
----
-
-## 17. What success looks like
-
-A successful flags.dev experience should let a developer move from:
-
-```text
-"I want to release this feature."
-```
-
-to:
-
-```text
-"I understand who will receive it."
-
-"I understand why they qualify."
-
-"I know approximately how large the exposure is."
-
-"I can simulate changing the rollout."
-
-"I can explain an individual evaluation."
-
-"I can integrate the same semantics into my application."
-```
-
-That is the product we are trying to build.
-
-Not simply a service that stores feature flags, but a platform that makes feature releases **more understandable, predictable, and deliberate**.
+The objective is not to build the largest feature-flag platform. It is to build a focused system that makes feature releases more understandable, predictable, and deliberate.
