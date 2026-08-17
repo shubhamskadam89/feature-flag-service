@@ -1,6 +1,6 @@
 import { Navbar } from '../components/landing/Navbar';
+import { Hero } from '../components/landing/Hero';
 import { MarqueeTicker } from '../components/landing/MarqueeTicker';
-import { HeroSection } from '../components/landing/HeroSection';
 import { SoundFamiliar } from '../components/landing/SoundFamiliar';
 import { ProcessSection } from '../components/landing/ProcessSection';
 import { HorizontalPlayground } from '../components/HorizontalPlayground/HorizontalPlayground';
@@ -11,49 +11,26 @@ import { FAQSection } from '../components/landing/FAQSection';
 import { FooterSection } from '../components/landing/FooterSection';
 
 export function LandingPage() {
-  const scrollToPlayground = () => {
-    const playgroundElement = document.getElementById('playground');
-    if (playgroundElement) {
-      playgroundElement.scrollIntoView({ behavior: 'smooth' });
-    }
+  const scrollToSimulation = () => {
+    document.getElementById('simulation')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <div className="relative min-h-screen text-[#131311] bg-[#fffdf6] font-sans antialiased">
-      
-      {/* Fixed Navbar */}
+    <div className="relative min-h-screen bg-[#fffdf6] font-sans antialiased text-[#131311]">
       <Navbar />
 
-      {/* Hero Section */}
-      <HeroSection onExploreClick={scrollToPlayground} />
+      <Hero onExploreClick={scrollToSimulation} />
 
-      {/* Infinite Marquee Ticker */}
+      {/* Legacy sections remain temporarily while the new narrative is ported section-by-section. */}
       <MarqueeTicker />
-
-      {/* Pain Points ("Sound Familiar?") */}
       <SoundFamiliar />
-
-      {/* 5-Step Process */}
       <ProcessSection />
-
-      {/* Horizontal Scroll Playground with Device Screen Frames */}
       <HorizontalPlayground />
-
-      {/* Feature Comparison Table */}
       <ComparisonTable />
-
-      {/* Metrics & Testimonials */}
       <StatsAndTestimonials />
-
-      {/* Transparent Pricing */}
       <PricingSection />
-
-      {/* FAQ Section */}
       <FAQSection />
-
-      {/* High-Impact Footer & Waitlist Form */}
       <FooterSection />
-
     </div>
   );
 }
