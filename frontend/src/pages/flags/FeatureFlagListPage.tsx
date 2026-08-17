@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { 
   Flag, 
   Plus, 
@@ -7,7 +7,6 @@ import {
   Edit3, 
   Trash2, 
   HelpCircle,
-  ArrowLeft,
   AlertTriangle
 } from 'lucide-react';
 import { 
@@ -24,7 +23,6 @@ import { type Project, type Feature } from '../../types';
 
 export const FeatureFlagListPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  const navigate = useNavigate();
 
   const [project, setProject] = useState<Project | null>(null);
   const [features, setFeatures] = useState<Feature[]>([]);
@@ -223,50 +221,40 @@ export const FeatureFlagListPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="border-b border-[#131311]/5 pb-5 flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <button 
-              onClick={() => navigate('/dashboard')} 
-              className="text-[#8d8d8a] hover:text-[#131311] transition-colors flex items-center gap-0.5 font-mono text-[9px] uppercase tracking-wider"
-            >
-              <ArrowLeft className="w-3 h-3" /> Back
-            </button>
-            <span className="text-[#131311]/20 font-sans text-xs">/</span>
-            <span className="font-mono text-[9px] text-[#8d8d8a] uppercase tracking-widest">
-              Project: {project?.name || '—'}
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-2.5">
-            <h2 className="font-display font-black text-2xl text-[#131311] uppercase tracking-tight">
-              FEATURE FLAGS
-            </h2>
+      {/* Header — Manus ink-surface hero */}
+      <section className="relative overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-ink)] p-7 text-[var(--cream)] sm:p-9">
+        <div className="absolute inset-0 opacity-[0.035] [background-image:linear-gradient(to_right,rgba(255,253,246,.2)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,253,246,.2)_1px,transparent_1px)] [background-size:36px_36px]" />
+        <div className="relative">
+          <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-lime)]">Feature flags</p>
+          <h1 className="mt-2 max-w-xl font-display text-4xl leading-[.9] sm:text-5xl">Define. Target. Evaluate.</h1>
+          <p className="mt-4 max-w-lg text-sm leading-relaxed text-[var(--cream)]/70">
+            Flags are project-scoped. Their enabled state is environment-scoped. Use the topbar selector to switch environments.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="label-mono text-[var(--cream)]/60">Project: {project?.name || '—'}</span>
             {activeEnvName && (
-              <span className="font-mono text-[9px] bg-[#131311]/5 border border-[#131311]/10 px-2 py-0.5 rounded text-[#575755] uppercase font-bold tracking-wider">
-                Environment: {activeEnvName}
-              </span>
+              <>
+                <span className="text-[var(--cream)]/20 font-mono text-[10px]">/</span>
+                <span className="label-mono text-[var(--color-lime)]">Environment: {activeEnvName}</span>
+              </>
+            )}
+            {currentOrgRole === 'ADMIN' && (
+              <button
+                onClick={() => {
+                  setFlagKey('');
+                  setFlagName('');
+                  setFlagDescription('');
+                  setValidationError(null);
+                  setIsCreateOpen(true);
+                }}
+                className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-lime)] px-3.5 py-2 font-mono text-[10px] font-semibold text-[var(--color-ink)] transition hover:opacity-85"
+              >
+                <Plus className="w-3.5 h-3.5" /> Create flag
+              </button>
             )}
           </div>
-          <p className="text-xs text-[#8d8d8a] mt-0.5">Manage runtime config toggles and decoupling parameters.</p>
         </div>
-
-        {currentOrgRole === 'ADMIN' && (
-          <button
-            onClick={() => {
-              setFlagKey('');
-              setFlagName('');
-              setFlagDescription('');
-              setValidationError(null);
-              setIsCreateOpen(true);
-            }}
-            className="flex items-center gap-1 bg-[#131311] hover:bg-black text-[#fffdf6] font-mono text-[10px] font-bold py-2.5 px-4 rounded-md transition-all self-start md:self-auto cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" /> CREATE FLAG
-          </button>
-        )}
-      </div>
+      </section>
 
       {/* Alert Banner */}
       {error && (
@@ -347,46 +335,45 @@ export const FeatureFlagListPage: React.FC = () => {
           No matches found for "{searchText}"
         </div>
       ) : (
-        /* Feature Grid list */
-        <div className="flex flex-col gap-4">
+        /* Feature Grid list — Manus FlagRow border-left pattern */
+        <div className="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)]">
+          <div className="flex items-center justify-between border-b border-[var(--color-line)] px-5 py-4">
+            <p className="font-display text-xl">Project flags</p>
+            <span className="rounded-full border border-[var(--color-line)] px-2 py-1 font-mono text-[9px] text-[var(--color-secondary-text)]">{filteredFeatures.length} flags</span>
+          </div>
           {filteredFeatures.map((flag) => {
             const isEnabled = !!featureStatesMap[flag.id];
             const isPending = !!isPendingMap[flag.id];
-            
             return (
               <div
                 key={flag.id}
-                className="bg-white border border-[#131311]/8 hover:border-[#131311]/15 rounded-xl p-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4 transition-all shadow-2xs"
+                className={`flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-[var(--color-line)] p-5 transition-colors last:border-b-0 hover:bg-[var(--color-surface-subtle)] border-l-4 ${
+                  isEnabled ? 'border-l-[var(--color-lime)]' : 'border-l-transparent'
+                }`}
               >
-                <div className="space-y-1.5">
+                <div className="min-w-0 space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-display font-black text-sm text-[#131311] tracking-tight">
-                      {flag.name}
-                    </span>
-                    <span className="font-mono text-[8px] bg-[#131311]/5 border border-[#131311]/10 px-1.5 py-0.5 rounded text-[#8d8d8a] font-bold uppercase tracking-wider">
-                      {flag.type}
-                    </span>
+                    <span className="font-display text-base font-semibold text-[var(--color-foreground)]">{flag.name}</span>
+                    <span className="rounded border border-[var(--color-line)] bg-[var(--color-surface-subtle)] px-1.5 py-0.5 font-mono text-[9px] text-[var(--color-muted-text)] uppercase">{flag.type}</span>
                   </div>
-                  <div className="font-mono text-[11px] text-[#575755] select-all">
-                    {flag.key}
-                  </div>
+                  <p className="font-mono text-[11px] text-[var(--color-secondary-text)] select-all">{flag.key}</p>
                   {flag.description && (
-                    <p className="text-xs text-[#8d8d8a] font-sans max-w-xl">
-                      {flag.description}
-                    </p>
+                    <p className="text-xs text-[var(--color-secondary-text)] max-w-xl">{flag.description}</p>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-6 border-t sm:border-t-0 border-[#131311]/5 pt-4 sm:pt-0 shrink-0">
-                  {/* Status Toggle control */}
+                <div className="flex items-center justify-between sm:justify-end gap-5 border-t sm:border-t-0 border-[var(--color-line)] pt-4 sm:pt-0 shrink-0">
+                  {/* StatusDot + label + toggle */}
                   <div className="flex items-center gap-3">
-                    <div className="flex flex-col items-end">
-                      <span className={`font-mono text-[9px] font-bold uppercase tracking-wider ${isEnabled ? 'text-emerald-600' : 'text-[#8d8d8a]'}`}>
-                        {isPending ? 'UPDATING...' : isEnabled ? '● ACTIVE' : '○ OFF'}
-                      </span>
-                    </div>
-
-                    <label className={`relative inline-flex items-center ${currentOrgRole === 'ADMIN' ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
+                    <span className={`label-mono ${
+                      isPending ? 'text-[var(--color-muted-text)]' :
+                      isEnabled ? 'text-[var(--color-lime)]' : 'text-[var(--color-muted-text)]'
+                    }`}>
+                      {isPending ? 'updating' : isEnabled ? 'on' : 'off'}
+                    </span>
+                    <label className={`relative inline-flex items-center ${
+                      currentOrgRole === 'ADMIN' ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+                    }`}>
                       <input
                         type="checkbox"
                         checked={isEnabled}
@@ -394,12 +381,12 @@ export const FeatureFlagListPage: React.FC = () => {
                         onChange={() => handleToggle(flag)}
                         className="sr-only peer"
                       />
-                      <div className="w-9 h-5 bg-[#e4e4e0] border border-[#131311]/12 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#c6fd50] peer-checked:border-[#131311]/20"></div>
+                      <div className="w-9 h-5 rounded-full border border-[var(--color-line)] bg-[var(--color-surface-subtle)] transition-all peer-checked:bg-[var(--color-lime)] peer-checked:border-[var(--color-lime)]/50 after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:border after:border-[var(--color-line)] after:transition-all peer-checked:after:translate-x-full after:content-[''] relative" />
                     </label>
                   </div>
 
                   {currentOrgRole === 'ADMIN' && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <button
                         onClick={() => {
                           setSelectedFeature(flag);
@@ -407,8 +394,8 @@ export const FeatureFlagListPage: React.FC = () => {
                           setFlagDescription(flag.description || '');
                           setIsEditOpen(true);
                         }}
-                        className="text-[#8d8d8a] hover:text-[#131311] transition-colors p-1.5 hover:bg-[#f3f2ea] rounded"
-                        title="Edit Details"
+                        className="rounded-lg border border-[var(--color-line)] p-1.5 text-[var(--color-secondary-text)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-foreground)]"
+                        title="Edit details"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
@@ -417,8 +404,8 @@ export const FeatureFlagListPage: React.FC = () => {
                           setSelectedFeature(flag);
                           setIsDeleteOpen(true);
                         }}
-                        className="text-[#8d8d8a] hover:text-red-500 transition-colors p-1.5 hover:bg-red-50 rounded"
-                        title="Archive Flag"
+                        className="rounded-lg border border-[var(--color-line)] p-1.5 text-[var(--color-secondary-text)] transition hover:border-[var(--color-conflict)]/50 hover:text-[var(--color-conflict)]"
+                        title="Archive flag"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

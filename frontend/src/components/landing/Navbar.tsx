@@ -1,128 +1,85 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Menu, X, Timer } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+
+const REPO_URL = "https://github.com/shubhamskadam89/feature-flag-service";
 
 export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-
-      // Detect background theme of current section under navbar
-      const navbarHeight = 64;
-      const x = window.innerWidth / 2;
-      const y = navbarHeight + 10;
-      const element = document.elementFromPoint(x, y);
-      const section = element?.closest('section, footer');
-      
-      if (section) {
-        const isDark = section.classList.contains('bg-[#131311]') || 
-                       section.id === 'pricing' || 
-                       section.id === 'contact' ||
-                       section.tagName.toLowerCase() === 'footer';
-        setIsDarkTheme(isDark);
-      } else {
-        setIsDarkTheme(false);
-      }
-    };
-    
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-      scrolled 
-        ? isDarkTheme
-          ? 'bg-[#131311]/90 backdrop-blur-md border-b border-white/10 py-3 text-[#fffdf6]'
-          : 'bg-[#fffdf6]/90 backdrop-blur-md border-b border-[#131311]/10 py-3 text-[#131311]' 
-        : 'bg-transparent py-5 text-[#131311]'
-    }`}>
-      <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
-        
-        {/* Brand logo */}
-        <a href="#" className="flex items-center group">
-          <img 
-            src={isDarkTheme && scrolled ? "/logo-dark.png" : "/logo-light.png"} 
-            className="h-8 w-auto object-contain transition-all duration-300 group-hover:scale-[1.02]" 
-            alt="flags.dev Logo" 
-          />
-        </a>
+    <header
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 surface-cream border-b ${scrolled
+        ? 'border-[var(--color-line)] bg-[var(--cream)]/90 backdrop-blur-md'
+        : 'border-transparent bg-transparent'
+        }`}
+    >
+      <nav className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:px-8">
+        {/* Brand */}
+        <img src="/logo-light.png" alt="Logo" className="h-8" />
 
-        {/* Desktop Links */}
-        <nav className={`hidden md:flex items-center gap-8 font-display font-bold text-xs uppercase tracking-wider transition-colors duration-300 ${
-          isDarkTheme && scrolled ? 'text-white/80' : 'text-[#131311]/80'
-        }`}>
-          <a href="#process" className="hover:text-[#c6fd50] transition-colors">How It Works</a>
-          <a href="#why-us" className="hover:text-[#c6fd50] transition-colors">Why Us</a>
-          <a href="#pricing" className="hover:text-[#c6fd50] transition-colors">Pricing</a>
-          <a href="#faqs" className="hover:text-[#c6fd50] transition-colors">FAQs</a>
-        </nav>
-
-        {/* CTA Actions */}
-        <div className="hidden md:flex items-center gap-3">
-          <div className={`px-2.5 py-1 rounded-full text-[9px] font-mono font-bold border flex items-center gap-1.5 transition-colors duration-300 ${
-            isDarkTheme && scrolled
-              ? 'bg-white/5 border-white/15 text-[#c6fd50]'
-              : 'bg-[#131311]/5 border-[#131311]/15 text-[#131311]'
-          }`}>
-            <Timer className="w-3 h-3" />
-            <span>0.05ms LATENCY</span>
-          </div>
-
-          <Link
-            to="/login"
-            className={`px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider hover:underline transition-all ${
-              isDarkTheme && scrolled ? 'text-white' : 'text-[#131311]'
-            }`}
-          >
-            Login
-          </Link>
-          <a
-            href="#contact"
-            className="px-5 py-2.5 bg-[#c6fd50] text-[#131311] font-display font-black text-xs uppercase tracking-wider rounded-full hover:bg-[#d4ff66] transition-all flex items-center gap-1 shadow-md hover:scale-105 cursor-pointer"
-          >
-            <span>Join Waitlist</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
+        {/* Desktop nav */}
+        <div className="hidden items-center gap-7 font-mono text-xs text-[var(--color-secondary-text)] md:flex">
+          <a href="#problem" className="hover:text-[var(--color-foreground)] transition-colors">
+            Problem
           </a>
+          <a href="#preview" className="hover:text-[var(--color-foreground)] transition-colors">
+            Simulator
+          </a>
+          <a href="#developers" className="hover:text-[var(--color-foreground)] transition-colors">
+            Docs
+          </a>
+          <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--color-foreground)] transition-colors">
+            GitHub
+          </a>
+          <Link to="/login" className="hover:text-[var(--color-foreground)] transition-colors">
+            Sign in
+          </Link>
         </div>
 
-        {/* Mobile menu toggle button */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className={`md:hidden p-2 rounded transition-colors duration-300 ${
-            isDarkTheme && scrolled ? 'text-white' : 'text-[#131311]'
-          }`}
-        >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </div>
-
-      {/* Mobile Menu Dropdown */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-[#131311] text-[#fffdf6] px-6 py-6 border-b border-white/10 flex flex-col gap-4 font-display text-sm uppercase tracking-wider">
-          <a href="#process" onClick={() => setMobileMenuOpen(false)}>How It Works</a>
-          <a href="#why-us" onClick={() => setMobileMenuOpen(false)}>Why Us</a>
-          <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
-          <a href="#faqs" onClick={() => setMobileMenuOpen(false)}>FAQs</a>
+        {/* CTA */}
+        <div className="hidden items-center gap-3 md:flex">
           <Link
-            to="/login"
-            onClick={() => setMobileMenuOpen(false)}
-            className="mt-2 py-2 border border-white/20 text-white font-mono text-xs font-bold rounded text-center hover:bg-white/5 transition-all"
+            to="/register"
+            className="inline-flex h-9 items-center rounded-full bg-[var(--color-primary)] px-4 font-mono text-xs text-[var(--color-primary-foreground)] transition-colors hover:opacity-90"
           >
-            Login
+            Try flags.dev
           </Link>
-          <a
-            href="#contact"
-            onClick={() => setMobileMenuOpen(false)}
-            className="py-3 bg-[#c6fd50] text-[#131311] font-black rounded text-center"
+        </div>
+
+        {/* Mobile toggle */}
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="md:hidden p-2 rounded-lg border border-[var(--color-line)] transition-colors"
+          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+        >
+          {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+        </button>
+      </nav>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="md:hidden surface-cream border-t border-[var(--color-line)] px-5 pb-6 pt-4 flex flex-col gap-4">
+          <a href="#problem" onClick={() => setMobileOpen(false)} className="font-mono text-sm text-[var(--color-secondary-text)]">Problem</a>
+          <a href="#preview" onClick={() => setMobileOpen(false)} className="font-mono text-sm text-[var(--color-secondary-text)]">Simulator</a>
+          <a href="#developers" onClick={() => setMobileOpen(false)} className="font-mono text-sm text-[var(--color-secondary-text)]">Docs</a>
+          <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="font-mono text-sm text-[var(--color-secondary-text)]">GitHub</a>
+          <Link to="/login" onClick={() => setMobileOpen(false)} className="font-mono text-sm text-[var(--color-secondary-text)]">Sign in</Link>
+          <Link
+            to="/register"
+            onClick={() => setMobileOpen(false)}
+            className="mt-2 inline-flex h-10 items-center justify-center rounded-full bg-[var(--color-primary)] font-mono text-xs text-[var(--color-primary-foreground)]"
           >
-            Join Waitlist ↗
-          </a>
+            Try flags.dev
+          </Link>
         </div>
       )}
     </header>
