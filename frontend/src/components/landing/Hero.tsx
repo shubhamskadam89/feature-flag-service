@@ -26,7 +26,7 @@ export function Hero({ onExploreClick }: HeroProps) {
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
-              href="#simulation"
+              href="#playground"
               onClick={onExploreClick}
               className="inline-flex items-center gap-2 rounded-full bg-[#131311] px-6 py-3 text-xs font-black uppercase tracking-widest text-[#fffdf6] transition-transform hover:scale-[1.02]"
             >
