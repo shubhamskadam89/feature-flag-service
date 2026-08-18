@@ -178,49 +178,34 @@ export const AuditLogListPage: React.FC = () => {
     );
   };
 
-  const getLogDotColor = (action: string) => {
-    if (action.includes('DELETED')) return 'bg-red-500';
-    if (action.includes('CREATED')) return 'bg-green-500';
-    if (action.includes('ROTATED') || action.includes('TOGGLED')) return 'bg-[#131311]';
-    return 'bg-[#8d8d8a]';
-  };
 
   return (
     <div className="flex flex-col gap-6 max-w-6xl w-full mx-auto">
-      {/* Header */}
-      <div className="border-b border-[#131311]/5 pb-5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#131311]/40"></div>
-              <span className="font-mono text-[9px] text-[#8d8d8a] uppercase tracking-widest">
-                Project: {project?.name || '—'}
-              </span>
-              <span className="text-[#8d8d8a]/40 text-[9px] font-mono">/</span>
-              <span className="font-mono text-[9px] text-[#131311] font-bold uppercase tracking-widest">
-                Environment: {activeEnvName || '—'}
-              </span>
-            </div>
-            <h2 className="font-display font-black text-2xl text-[#131311] uppercase tracking-tight">
-              AUDIT LOGS
-            </h2>
-            <p className="text-xs text-[#8d8d8a] mt-0.5">
-              Track configuration changes, environment events, and team activity.
-            </p>
+      {/* Header — Manus ink-surface hero pattern */}
+      <section className="relative overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-ink)] p-7 text-[var(--cream)] sm:p-10">
+        <div className="absolute inset-0 opacity-[0.035] [background-image:linear-gradient(to_right,rgba(255,253,246,.2)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,253,246,.2)_1px,transparent_1px)] [background-size:36px_36px]" />
+        <div className="relative">
+          <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[var(--color-lime)]">Traceable release decisions</p>
+          <h1 className="mt-3 max-w-xl font-display text-4xl leading-[.9] sm:text-5xl">Every change leaves context behind.</h1>
+          <p className="mt-4 max-w-lg text-sm leading-relaxed text-[var(--cream)]/70">
+            A release history should explain what changed, where it changed, and when the decision was made.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <span className="label-mono text-[var(--cream)]/60">Project: {project?.name || '—'}</span>
+            <span className="text-[var(--cream)]/30 font-mono text-[10px]">/</span>
+            <span className="label-mono text-[var(--color-lime)]">Environment: {activeEnvName || '—'}</span>
+            {activeEnvId && (
+              <button
+                onClick={loadAuditLogs}
+                disabled={isLoading}
+                className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-[var(--cream)]/20 bg-[var(--cream)]/10 px-3 py-1.5 font-mono text-[10px] font-semibold text-[var(--cream)] transition hover:bg-[var(--cream)]/20 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
+              </button>
+            )}
           </div>
-          
-          {/* Refresh Button */}
-          {activeEnvId && (
-            <button
-              onClick={loadAuditLogs}
-              disabled={isLoading}
-              className="bg-white border border-[#131311]/12 hover:bg-[#f3f2ea]/20 text-[#131311] font-mono text-[10px] font-bold py-1.5 px-3 rounded-md transition-all shadow-3xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} /> REFRESH
-            </button>
-          )}
         </div>
-      </div>
+      </section>
 
       {/* Connection / API Error Banner */}
       {error && (
@@ -273,110 +258,101 @@ export const AuditLogListPage: React.FC = () => {
           </p>
         </div>
       ) : (
-        /* Audit logs list */
-        <div className="flex flex-col gap-3">
-          <div className="bg-white border border-[#131311]/12 rounded-xl overflow-hidden shadow-3xs">
-            <div className="divide-y divide-[#131311]/8">
-              {logs.map((log) => {
-                const isExpanded = expandedLogId === log.id;
-                return (
-                  <div key={log.id} className="transition-colors hover:bg-[#f3f2ea]/5">
-                    <div 
-                      onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                      className="p-5 flex flex-wrap items-center justify-between gap-4 cursor-pointer"
-                    >
-                      <div className="flex items-start gap-4">
-                        {/* Status indicator dot */}
-                        <div className="mt-1.5 flex items-center justify-center">
-                          <span className={`w-2 h-2 rounded-full ${getLogDotColor(log.action)}`}></span>
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                            <span className="font-mono text-xs font-bold text-[#131311] uppercase tracking-wide">
-                              {getActionLabel(log.action)}
-                            </span>
-                            <span className="text-[#8d8d8a] text-[10px]">&bull;</span>
-                            <div className="flex items-center gap-1.5 text-[#575755] font-sans text-xs">
-                              <User className="w-3.5 h-3.5 text-[#8d8d8a]/60 shrink-0" />
-                              <span>{log.userName || log.userEmail || 'System'}</span>
-                              <span className="text-[#8d8d8a]/50">({log.userEmail})</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 text-[10px] text-[#8d8d8a] font-mono">
-                            <Calendar className="w-3.5 h-3.5 text-[#8d8d8a]/60 shrink-0" />
-                            <span>{new Date(log.createdAt).toLocaleString()}</span>
-                          </div>
-                        </div>
+        <>
+          <div className="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)]">
+            {/* Audit log list — Manus AuditRow pattern */}
+            <div className="flex items-center justify-between border-b border-[var(--color-line)] px-5 py-4">
+            <div>
+              <p className="font-display text-xl">Environment audit log</p>
+              <p className="mt-1 font-mono text-[10px] text-[var(--color-muted-text)]">Configuration changes recorded in this environment.</p>
+            </div>
+            <span className="rounded-full border border-[var(--color-line)] px-2 py-1 font-mono text-[9px] text-[var(--color-secondary-text)]">{totalElements} events</span>
+          </div>
+          <div className="divide-y divide-[var(--color-line)]">
+            {logs.map((log) => {
+              const isExpanded = expandedLogId === log.id;
+              const isCreate = log.action.includes('CREATED');
+              const isDelete = log.action.includes('DELETED');
+              return (
+                <div key={log.id} className="transition-colors hover:bg-[var(--color-surface-subtle)]">
+                  <div 
+                    onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                    className="flex gap-4 px-5 py-4 cursor-pointer"
+                  >
+                    {/* Manus-style icon circle: lime for change/create, sand for review/delete */}
+                    <span className={`grid size-7 shrink-0 place-items-center rounded-full mt-0.5 ${
+                      isCreate ? 'bg-[var(--color-lime)] text-[var(--color-ink)]' :
+                      isDelete ? 'bg-[var(--color-conflict)]/15 text-[var(--color-conflict)]' :
+                      'bg-[var(--color-sand)] text-[var(--color-secondary-text)]'
+                    }`}>
+                      <span className="block w-2 h-2 rounded-full" style={{ background: 'currentColor' }} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-[var(--color-foreground)]">{getActionLabel(log.action)}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                        <span className="flex items-center gap-1 font-mono text-[10px] text-[var(--color-secondary-text)]">
+                          <User className="w-3 h-3" /> {log.userName || log.userEmail || 'System'}
+                        </span>
+                        <span className="flex items-center gap-1 font-mono text-[10px] text-[var(--color-secondary-text)]">
+                          <Calendar className="w-3 h-3" /> {new Date(log.createdAt).toLocaleString()}
+                        </span>
                       </div>
+                      <div className="mt-1">{renderChanges(log)}</div>
+                    </div>
+                    <button className="shrink-0 text-[var(--color-muted-text)] hover:text-[var(--color-foreground)] mt-0.5">
+                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                  </div>
 
-                      {/* Summary of changes / Toggle */}
-                      <div className="flex items-center gap-4">
-                        {renderChanges(log)}
-                        <button className="text-[#8d8d8a] hover:text-[#131311]">
-                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </button>
+                  {isExpanded && (
+                    <div className="px-5 pb-5 pt-1 bg-[var(--color-surface-subtle)] border-t border-[var(--color-line)]">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                        <div className="space-y-1">
+                          <span className="label-mono">Previous Value</span>
+                          <pre className="p-3 bg-[var(--color-surface)] border border-[var(--color-line)] text-[var(--color-secondary-text)] font-mono text-[10px] leading-relaxed rounded-lg overflow-x-auto max-h-48">
+                            {log.oldValue ? formatValue(log.oldValue).text : '— (None)'}
+                          </pre>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="label-mono">New Value</span>
+                          <pre className="p-3 bg-[var(--color-surface)] border border-[var(--color-lime)]/30 text-[var(--color-secondary-text)] font-mono text-[10px] leading-relaxed rounded-lg overflow-x-auto max-h-48">
+                            {log.newValue ? formatValue(log.newValue).text : '— (None)'}
+                          </pre>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Expandable JSON Detail Area */}
-                    {isExpanded && (
-                      <div className="px-5 pb-5 pt-1 bg-[#f3f2ea]/15 border-t border-[#131311]/5 divide-y divide-[#131311]/5">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                          {/* Previous Value block */}
-                          <div className="space-y-1">
-                            <span className="font-mono text-[9px] text-[#8d8d8a] uppercase tracking-wider font-bold">
-                              Previous Value
-                            </span>
-                            <pre className="p-3 bg-white border border-[#131311]/8 text-[#575755] font-mono text-[10px] leading-relaxed rounded-lg overflow-x-auto max-h-48 shadow-3xs">
-                              {log.oldValue ? formatValue(log.oldValue).text : '— (None)'}
-                            </pre>
-                          </div>
-
-                          {/* New Value block */}
-                          <div className="space-y-1">
-                            <span className="font-mono text-[9px] text-[#8d8d8a] uppercase tracking-wider font-bold">
-                              New Value
-                            </span>
-                            <pre className="p-3 bg-white border border-green-200/50 text-[#575755] font-mono text-[10px] leading-relaxed rounded-lg overflow-x-auto max-h-48 shadow-3xs">
-                              {log.newValue ? formatValue(log.newValue).text : '— (None)'}
-                            </pre>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
+        </div>
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between bg-white border border-[#131311]/12 px-4 py-3.5 rounded-xl shadow-3xs">
+            <div className="flex items-center justify-between border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3.5 rounded-xl">
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0 || isLoading}
-                className="bg-white border border-[#131311]/12 hover:bg-[#f3f2ea]/20 text-[#131311] font-mono text-[10px] font-bold py-1.5 px-3.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="border border-[var(--color-line)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-subtle)] text-[var(--color-foreground)] font-mono text-[10px] font-semibold py-1.5 px-3.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                &larr; PREVIOUS
+                ← Previous
               </button>
               
-              <span className="font-mono text-xs text-[#575755]">
-                Page <span className="font-bold text-[#131311]">{page + 1}</span> of <span className="font-bold text-[#131311]">{totalPages}</span> ({totalElements} total logs)
+              <span className="font-mono text-xs text-[var(--color-secondary-text)]">
+                Page <span className="font-semibold text-[var(--color-foreground)]">{page + 1}</span> of <span className="font-semibold text-[var(--color-foreground)]">{totalPages}</span> ({totalElements} events)
               </span>
 
               <button
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1 || isLoading}
-                className="bg-white border border-[#131311]/12 hover:bg-[#f3f2ea]/20 text-[#131311] font-mono text-[10px] font-bold py-1.5 px-3.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="border border-[var(--color-line)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-subtle)] text-[var(--color-foreground)] font-mono text-[10px] font-semibold py-1.5 px-3.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                NEXT &rarr;
+                Next →
               </button>
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Bottom Help text */}

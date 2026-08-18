@@ -1,57 +1,62 @@
 import { Navbar } from '../components/landing/Navbar';
-import { MarqueeTicker } from '../components/landing/MarqueeTicker';
 import { HeroSection } from '../components/landing/HeroSection';
-import { SoundFamiliar } from '../components/landing/SoundFamiliar';
-import { ProcessSection } from '../components/landing/ProcessSection';
-import { HorizontalPlayground } from '../components/HorizontalPlayground/HorizontalPlayground';
-import { ComparisonTable } from '../components/landing/ComparisonTable';
-import { StatsAndTestimonials } from '../components/landing/StatsAndTestimonials';
-import { PricingSection } from '../components/landing/PricingSection';
+import { ProblemSection } from '../components/landing/ProblemSection';
+import { WorkflowSection } from '../components/landing/WorkflowSection';
+import { ReleaseSimulator } from '../components/landing/ReleaseSimulator';
+import { BoundariesSection } from '../components/landing/BoundariesSection';
+import { DeveloperSection } from '../components/landing/DeveloperSection';
+import { ProofSection } from '../components/landing/ProofSection';
 import { FAQSection } from '../components/landing/FAQSection';
+import { FinalCta } from '../components/landing/FinalCta';
 import { FooterSection } from '../components/landing/FooterSection';
+import { Section } from '../components/landing/primitives';
 
 export function LandingPage() {
-  const scrollToPlayground = () => {
-    const playgroundElement = document.getElementById('playground');
-    if (playgroundElement) {
-      playgroundElement.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
-    <div className="relative min-h-screen text-[#131311] bg-[#fffdf6] font-sans antialiased">
-      
+    <div className="relative min-h-screen text-[var(--color-foreground)] bg-[var(--color-background)] font-sans antialiased">
+
       {/* Fixed Navbar */}
       <Navbar />
 
-      {/* Hero Section */}
-      <HeroSection onExploreClick={scrollToPlayground} />
+      {/* Hero — Impact preview above the fold */}
+      <HeroSection />
 
-      {/* Infinite Marquee Ticker */}
-      <MarqueeTicker />
+      {/* Problem — A rollout % is a control, not an answer */}
+      <ProblemSection />
 
-      {/* Pain Points ("Sound Familiar?") */}
-      <SoundFamiliar />
+      {/* Workflow — 5-step release workflow */}
+      <WorkflowSection />
 
-      {/* 5-Step Process */}
-      <ProcessSection />
+      {/* Release Simulator — Centerpiece: WHO / HOW MUCH / WHAT IF / WHY */}
+      <Section id="preview" surface="ink">
+        <div className="space-y-4 mb-8">
+          <p className="label-mono text-[var(--color-lime)]">Simulation</p>
+          <h2 className="max-w-2xl text-3xl leading-[1.05] sm:text-4xl font-black">
+            See the blast radius before you toggle.
+          </h2>
+          <p className="max-w-xl text-sm leading-relaxed text-[var(--color-secondary-text)]">
+            Interactive evaluation console. Simulate rollout target adjustments against current baseline settings to calculate exact context exposure change.
+          </p>
+        </div>
+        <ReleaseSimulator />
+      </Section>
 
-      {/* Horizontal Scroll Playground with Device Screen Frames */}
-      <HorizontalPlayground />
+      {/* Boundaries — What flags.dev is and isn't */}
+      <BoundariesSection />
 
-      {/* Feature Comparison Table */}
-      <ComparisonTable />
+      {/* Developer — Java SDK + HTTP API */}
+      <DeveloperSection />
 
-      {/* Metrics & Testimonials */}
-      <StatsAndTestimonials />
+      {/* Proof — Infrastructure + architecture */}
+      <ProofSection />
 
-      {/* Transparent Pricing */}
-      <PricingSection />
-
-      {/* FAQ Section */}
+      {/* FAQ */}
       <FAQSection />
 
-      {/* High-Impact Footer & Waitlist Form */}
+      {/* Final CTA */}
+      <FinalCta />
+
+      {/* Footer */}
       <FooterSection />
 
     </div>

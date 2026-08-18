@@ -1,21 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { 
-  Grid, 
-  Flag, 
-  Layers, 
-  Settings, 
-  History, 
-  HelpCircle, 
-  BookOpen, 
-  ChevronDown, 
-  Plus, 
-  Trash2, 
-  Edit3, 
-  LogOut, 
-  Menu, 
-  X,
-  Activity
+import {
+  Grid,
+  Flag,
+  Layers,
+  Settings,
+  History,
+  HelpCircle,
+  BookOpen,
+  ChevronDown,
+  Plus,
+  Trash2,
+  Edit3,
+  LogOut,
+  Menu,
+  X
 } from 'lucide-react';
 import { getOrganizations, createOrganization, updateOrganization, deleteOrganization } from '../services/organizationService';
 import { getProjects } from '../services/projectService';
@@ -29,7 +28,7 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, activeTab }) => {
   const navigate = useNavigate();
-  
+
   const [user] = useState<{ name: string; email: string }>(() => {
     const savedUserStr = localStorage.getItem('user');
     if (savedUserStr) {
@@ -41,10 +40,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
     }
     return { name: 'Developer User', email: 'dev@flags.dev' };
   });
-  
+
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [activeOrg, setActiveOrg] = useState<Organization | null>(null);
-  
+
   // Project Switcher States
   const { projectId } = useParams<{ projectId?: string }>();
   const [projectsList, setProjectsList] = useState<Project[]>([]);
@@ -57,16 +56,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
   const [activeEnv, setActiveEnv] = useState<Environment | null>(null);
   const [isEnvDropdownOpen, setIsEnvDropdownOpen] = useState(false);
   const envDropdownRef = useRef<HTMLDivElement>(null);
-  
+
   // Modals & UI States
   const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+
   // Organization Modals
   const [isCreateOrgOpen, setIsCreateOrgOpen] = useState(false);
   const [isEditOrgOpen, setIsEditOrgOpen] = useState(false);
   const [isDeleteOrgConfirmOpen, setIsDeleteOrgConfirmOpen] = useState(false);
-  
+
   const [newOrgName, setNewOrgName] = useState('');
   const [editOrgName, setEditOrgName] = useState('');
   const [orgError, setOrgError] = useState<string | null>(null);
@@ -171,14 +170,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
       const response = await getOrganizations();
       if (response.data && response.data.length > 0) {
         setOrganizations(response.data);
-        
+
         // Find selected organization
         const storedOrgId = selectOrgId || localStorage.getItem('activeOrgId');
         const found = response.data.find(org => org.id === storedOrgId) || response.data[0];
-        
+
         setActiveOrg(found);
         localStorage.setItem('activeOrgId', found.id);
-        
+
         // Dispatch custom event to notify nested components of org change
         window.dispatchEvent(new Event('orgChanged'));
       } else {
@@ -275,27 +274,24 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
   // Sidebar Component Contents
   const renderSidebarContents = () => (
     <div className="flex flex-col h-full py-6 px-4">
-      {/* Brand logo & mobile close option */}
-      <div className="mb-8 flex justify-between items-center px-2">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-[#131311] flex items-center justify-center text-[#c6fd50] font-black text-xs">
-            ⚡
-          </div>
-          <div>
-            <h1 className="font-display font-black text-sm text-[#131311] tracking-tight">FLAGS.DEV</h1>
-            <p className="font-mono text-[8px] text-[#8d8d8a] uppercase tracking-wider">console</p>
-          </div>
-        </div>
-        <button 
+      {/* Brand — Manus lime-dot pattern */}
+      <div className="mb-9 flex justify-between items-center px-2">
+        <a href="/" className="flex items-center gap-2.5">
+          <span>
+            <img src="/logo-light.png" alt="Logo" className="h-6" />
+            <span className="mt-0.5 block font-mono text-[9px] uppercase tracking-[0.17em] text-[var(--color-muted-text)]">release console</span>
+          </span>
+        </a>
+        <button
           onClick={() => setIsMobileMenuOpen(false)}
-          className="md:hidden p-1 hover:bg-[#131311]/5 transition-colors rounded-md"
+          className="md:hidden p-1.5 rounded-lg border border-[var(--color-line)] hover:bg-[var(--color-surface)] transition-colors"
         >
-          <X className="w-4 h-4 text-[#8d8d8a]" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Nav List */}
-      <nav className="flex-grow flex flex-col gap-1 font-mono text-xs">
+      {/* Nav List — Manus border-transparent→border-line active pattern */}
+      <nav className="flex-grow flex flex-col gap-0.5">
         {navItems.map((item) => {
           const isActive = activeTab === item.key;
           const isDisabled = item.key !== 'projects' && !projectId;
@@ -307,13 +303,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
                 setIsMobileMenuOpen(false);
                 navigate(item.path);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all text-left border ${
-                isActive 
-                  ? 'bg-white shadow-xs border-[#131311]/8 text-[#131311] font-bold' 
-                  : isDisabled
-                    ? 'text-[#8d8d8a]/40 border-transparent cursor-not-allowed'
-                    : 'text-[#575755] border-transparent hover:text-[#131311] hover:bg-[#131311]/4'
-              }`}
+              className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition ${isActive
+                ? 'border-[var(--color-line)] bg-[var(--color-surface)] font-semibold text-[var(--color-foreground)] shadow-sm'
+                : isDisabled
+                  ? 'border-transparent text-[var(--color-muted-text)]/40 cursor-not-allowed'
+                  : 'border-transparent text-[var(--color-secondary-text)] hover:border-[var(--color-line)] hover:bg-[var(--color-surface)]/50 hover:text-[var(--color-foreground)]'
+                }`}
             >
               {item.icon}
               <span>{item.label}</span>
@@ -322,28 +317,33 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
         })}
       </nav>
 
-      {/* Footer Details */}
-      <div className="mt-auto flex flex-col gap-4">
-        <div className="border-t border-[#131311]/5 pt-4 flex flex-col gap-1 font-mono text-[10px] text-[#8d8d8a]">
-          <a href="#" className="flex items-center gap-2 px-3 py-1.5 hover:text-[#131311] transition-colors rounded-md hover:bg-[#131311]/4">
-            <HelpCircle className="w-3.5 h-3.5" /> Support
-          </a>
-          <a href="#" className="flex items-center gap-2 px-3 py-1.5 hover:text-[#131311] transition-colors rounded-md hover:bg-[#131311]/4">
-            <BookOpen className="w-3.5 h-3.5" /> Docs
-          </a>
+      {/* Sidebar footer — docs + user */}
+      <div className="mt-auto space-y-3 border-t border-[var(--color-line)] pt-4">
+        <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] p-3">
+          <p className="font-mono text-[10px] font-semibold text-[var(--color-foreground)]">Release console</p>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--color-secondary-text)]">Connected to the flags.dev service.</p>
+          <div className="mt-3 flex gap-2 font-mono text-[10px]">
+            <a href="#" className="text-[var(--color-foreground)] underline decoration-[var(--color-lime)] decoration-2 underline-offset-4">
+              <HelpCircle className="inline w-3 h-3 mr-1" />Support
+            </a>
+            <a href="#" className="ml-3 text-[var(--color-foreground)] underline decoration-[var(--color-lime)] decoration-2 underline-offset-4">
+              <BookOpen className="inline w-3 h-3 mr-1" />Docs
+            </a>
+          </div>
         </div>
-
-        <div className="border-t border-[#131311]/5 pt-4 flex items-center gap-3 bg-white border border-[#131311]/5 rounded-lg p-2.5 shadow-2xs">
-          <div className="w-7 h-7 rounded-md bg-[#f3f2ea] border border-[#131311]/8 flex items-center justify-center text-[#131311] font-bold text-xs">
-            {user?.name ? user.name[0].toUpperCase() : 'U'}
+        {/* User row */}
+        <div className="flex items-center gap-3 px-1">
+          {/* Manus-style ink avatar */}
+          <div className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--color-ink)] font-mono text-xs font-bold text-[var(--color-cream)]">
+            {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-bold text-[#131311] truncate">{user?.name}</div>
-            <div className="text-[8px] text-[#8d8d8a] truncate">{user?.email}</div>
+            <div className="font-mono text-[10px] font-semibold text-[var(--color-foreground)] truncate">{user?.name}</div>
+            <div className="font-mono text-[9px] text-[var(--color-muted-text)] truncate">{user?.email}</div>
           </div>
-          <button 
+          <button
             onClick={handleLogout}
-            className="text-[#8d8d8a] hover:text-[#ff4d4d] transition-colors p-1 border border-transparent hover:bg-red-50 hover:border-red-100 rounded-md"
+            className="text-[var(--color-muted-text)] hover:text-[var(--color-destructive)] transition-colors p-1.5 rounded-lg border border-transparent hover:border-[var(--color-line)]"
             title="Logout"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -354,49 +354,54 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
   );
 
   return (
-    <div className="theme-cream min-h-screen bg-[#fffdf6] text-[#131311] flex relative font-sans antialiased selection:bg-[#c6fd50] selection:text-[#131311]">
-      {/* Background grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#131311_1px,transparent_1px),linear-gradient(to_bottom,#131311_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.02] pointer-events-none z-0"></div>
+    <div className="surface-cream min-h-screen text-[var(--color-foreground)] flex relative font-sans antialiased">
+      {/* Subtle grid background — Manus pattern */}
+      <div className="fixed inset-0 -z-10 pointer-events-none opacity-[0.035] [background-image:linear-gradient(to_right,#131311_1px,transparent_1px),linear-gradient(to_bottom,#131311_1px,transparent_1px)] [background-size:34px_34px]" />
 
       {/* Mobile Drawer (Sidebar overlay on small viewports) */}
       <div className={`fixed inset-0 z-40 transition-opacity duration-300 md:hidden ${isMobileMenuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
         {/* Dark Backdrop */}
-        <div 
+        <div
           onClick={() => setIsMobileMenuOpen(false)}
           className="absolute inset-0 bg-black/30 backdrop-blur-xs"
         />
         {/* Drawer content sheet */}
-        <div className={`absolute top-0 bottom-0 left-0 w-60 bg-[#f3f2ea] border-r border-[#131311]/8 shadow-2xl transition-transform duration-300 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className={`absolute top-0 bottom-0 left-0 w-60 bg-[var(--sand)] border-r border-[var(--color-line)] shadow-2xl transition-transform duration-300 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           {renderSidebarContents()}
         </div>
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:block fixed left-0 top-0 bottom-0 w-60 z-30 bg-[#f3f2ea] border-r border-[#131311]/8">
+      <aside className="hidden md:block fixed left-0 top-0 bottom-0 w-60 z-30 bg-[var(--sand)] border-r border-[var(--color-line)]">
         {renderSidebarContents()}
       </aside>
 
       {/* Main Layout Area */}
       <div className="flex-grow flex flex-col md:ml-60 min-w-0 relative z-10 min-h-screen">
-        {/* Header Topbar */}
-        <header className="flex justify-between items-center w-full px-6 md:px-8 h-16 bg-[#fffdf6]/90 backdrop-blur-md border-b border-[#131311]/6 sticky top-0 z-20">
-          <div className="flex items-center gap-4">
-            <button 
+        {/* Header Topbar — Manus sticky backdrop-blur pattern */}
+        <header className="sticky top-0 z-30 flex h-[74px] items-center justify-between border-b border-[var(--color-line)] bg-[var(--cream)]/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden text-[#131311] hover:bg-[#131311]/4 p-1.5 border border-[#131311]/8 transition-colors rounded-md"
+              className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-2 lg:hidden"
             >
               <Menu className="w-4 h-4" />
             </button>
 
-            {/* Context switch dropdowns */}
+            {/* Context switch dropdowns — Manus topbar Project/Environment pattern */}
+            <div className="hidden text-sm sm:block">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-muted-text)]">Project</p>
+              <p className="mt-0.5 font-display text-base leading-none">{activeProject?.name || 'Select project'}</p>
+            </div>
+            <span className="hidden h-8 w-px bg-[var(--color-line)] sm:block" />
             <div className="flex items-center gap-2 font-mono text-xs">
               <div className="relative" ref={orgDropdownRef}>
                 <button
                   onClick={() => setIsOrgDropdownOpen(!isOrgDropdownOpen)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#131311]/12 hover:border-[#131311]/25 text-[#131311] font-semibold text-xs rounded-md shadow-2xs hover:bg-[#fffdf6] transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-line)] hover:border-[var(--color-line-strong)] font-mono text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
                 >
-                  <span className="max-w-[120px] truncate">{activeOrg?.name || 'Loading...'}</span>
-                  <ChevronDown className="w-3 h-3 text-[#8d8d8a]" />
+                  <span className="max-w-[100px] truncate">{activeOrg?.name || 'Loading...'}</span>
+                  <ChevronDown className="w-3 h-3 text-[var(--color-muted-text)]" />
                 </button>
 
                 {/* Organization Switcher Dropdown */}
@@ -412,9 +417,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
                           <button
                             key={org.id}
                             onClick={() => handleOrgSwitch(org)}
-                            className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between ${
-                              isActive ? 'text-[#131311] font-bold bg-[#131311]/4' : 'text-[#575755] hover:bg-[#131311]/3'
-                            }`}
+                            className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between ${isActive ? 'text-[#131311] font-bold bg-[#131311]/4' : 'text-[#575755] hover:bg-[#131311]/3'
+                              }`}
                           >
                             <span className="text-xs">{org.name}</span>
                             <span className="text-[8px] font-mono border border-[#131311]/10 px-1 py-0.2 rounded bg-white font-bold text-[#8d8d8a]">
@@ -466,9 +470,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
                 )}
               </div>
 
-              {/* Breadcrumb separator & project context switcher */}
-              <span className="text-[#131311]/20 font-sans text-sm select-none">/</span>
-
+              {/* Project switcher */}
               <div className="relative" ref={projectDropdownRef}>
                 <button
                   onClick={() => {
@@ -478,16 +480,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
                       navigate('/dashboard');
                     }
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#131311]/12 hover:border-[#131311]/25 text-[#131311] font-semibold text-xs rounded-md shadow-2xs hover:bg-[#fffdf6] transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-line)] hover:border-[var(--color-line-strong)] font-mono text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
                   title="Switch Project"
                 >
                   <span className="max-w-[120px] truncate">{activeProject?.name || '—'}</span>
-                  <ChevronDown className="w-3 h-3 text-[#8d8d8a]" />
+                  <ChevronDown className="w-3 h-3 text-[var(--color-muted-text)]" />
                 </button>
 
                 {isProjectDropdownOpen && projectsList.length > 0 && (
-                  <div className="absolute left-0 mt-1.5 w-60 bg-white border border-[#131311]/12 rounded-lg shadow-lg z-50 overflow-hidden">
-                    <div className="p-2.5 border-b border-[#131311]/6 bg-[#f3f2ea] text-[9px] text-[#8d8d8a] font-bold tracking-wider uppercase font-mono">
+                  <div className="absolute left-0 mt-1.5 w-60 bg-[var(--color-surface)] border border-[var(--color-line)] rounded-xl shadow-lg z-50 overflow-hidden">
+                    <div className="p-2.5 border-b border-[var(--color-line)] bg-[var(--color-surface-subtle)] label-mono">
                       Projects
                     </div>
                     <div className="max-h-48 overflow-y-auto p-1 flex flex-col gap-0.5">
@@ -501,11 +503,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
                               const currentTab = activeTab === 'projects' ? 'flags' : activeTab;
                               navigate(`/projects/${p.id}/${currentTab}`);
                             }}
-                            className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between ${
-                              isActive ? 'text-[#131311] font-bold bg-[#131311]/4' : 'text-[#575755] hover:bg-[#131311]/3'
-                            }`}
+                            className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm ${isActive ? 'font-semibold text-[var(--color-foreground)] bg-[var(--color-surface-subtle)]' : 'text-[var(--color-secondary-text)] hover:bg-[var(--color-surface-subtle)]'
+                              }`}
                           >
-                            <span className="text-xs truncate">{p.name}</span>
+                            {p.name}
                           </button>
                         );
                       })}
@@ -514,30 +515,23 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
                 )}
               </div>
 
-              {/* Breadcrumb separator & environment context switcher */}
+              {/* Environment selector — Manus color-coded dot pattern */}
               {projectId && (
                 <>
-                  <span className="text-[#131311]/20 font-sans text-sm select-none">/</span>
-
                   <div className="relative" ref={envDropdownRef}>
-                    <button
-                      onClick={() => {
-                        if (environmentsList.length > 0) {
-                          setIsEnvDropdownOpen(!isEnvDropdownOpen);
-                        } else {
-                          navigate(`/projects/${projectId}/environments`);
-                        }
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#131311]/12 hover:border-[#131311]/25 text-[#131311] font-semibold text-xs rounded-md shadow-2xs hover:bg-[#fffdf6] transition-colors cursor-pointer"
-                      title="Switch Environment"
-                    >
-                      <span className="max-w-[120px] truncate">{activeEnv?.name || '—'}</span>
-                      <ChevronDown className="w-3 h-3 text-[#8d8d8a]" />
-                    </button>
+                    <label className="group flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2" title="Choose environment">
+                      {/* Color dot: red=Production, amber=Staging, green=others */}
+                      <span className={`size-2 rounded-full ${activeEnv?.name?.toLowerCase().includes('prod') ? 'bg-[var(--color-conflict)]' :
+                        activeEnv?.name?.toLowerCase().includes('stag') ? 'bg-[var(--color-caution)]' :
+                          'bg-[var(--color-lime)]'
+                        }`} />
+                      <span className="font-mono text-[11px] font-semibold">{activeEnv?.name || '—'}</span>
+                      <ChevronDown className="w-3 h-3 text-[var(--color-muted-text)]" />
+                    </label>
 
                     {isEnvDropdownOpen && environmentsList.length > 0 && (
-                      <div className="absolute left-0 mt-1.5 w-60 bg-white border border-[#131311]/12 rounded-lg shadow-lg z-50 overflow-hidden">
-                        <div className="p-2.5 border-b border-[#131311]/6 bg-[#f3f2ea] text-[9px] text-[#8d8d8a] font-bold tracking-wider uppercase font-mono">
+                      <div className="absolute left-0 mt-1.5 w-56 bg-[var(--color-surface)] border border-[var(--color-line)] rounded-xl shadow-lg z-50 overflow-hidden">
+                        <div className="p-2.5 border-b border-[var(--color-line)] bg-[var(--color-surface-subtle)] label-mono">
                           Environments
                         </div>
                         <div className="max-h-48 overflow-y-auto p-1 flex flex-col gap-0.5">
@@ -553,11 +547,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
                                   localStorage.setItem('activeEnvironmentName', e.name);
                                   window.dispatchEvent(new Event('envChanged'));
                                 }}
-                                className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between ${
-                                  isActive ? 'text-[#131311] font-bold bg-[#131311]/4' : 'text-[#575755] hover:bg-[#131311]/3'
-                                }`}
+                                className={`flex w-full items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${isActive ? 'font-semibold text-[var(--color-foreground)] bg-[var(--color-surface-subtle)]' : 'text-[var(--color-secondary-text)] hover:bg-[var(--color-surface-subtle)]'
+                                  }`}
                               >
-                                <span className="text-xs truncate">{e.name}</span>
+                                <span className={`size-1.5 rounded-full shrink-0 ${e.name?.toLowerCase().includes('prod') ? 'bg-[var(--color-conflict)]' :
+                                  e.name?.toLowerCase().includes('stag') ? 'bg-[var(--color-caution)]' :
+                                    'bg-[var(--color-lime)]'
+                                  }`} />
+                                {e.name}
                               </button>
                             );
                           })}
@@ -571,20 +568,25 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Connected indicator — Manus "Local interactive demo" pattern */}
+            <span className="hidden items-center gap-2 font-mono text-[10px] text-[var(--color-secondary-text)] md:flex">
+              <span className="size-1.5 rounded-full bg-[var(--color-lime)]" />
+              Connected
+            </span>
             {activeOrg && (
-              <span className="font-mono text-[9px] text-[#131311] border border-[#131311]/15 px-2 py-0.5 rounded bg-[#c6fd50]/15 font-bold uppercase tracking-wider">
+              <span className="rounded-full border border-[var(--color-line)] bg-[var(--color-lime)]/15 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider">
                 {activeOrg.role}
               </span>
             )}
-            <div className="w-px h-5 bg-[#131311]/8 hidden sm:block"></div>
-            <div className="flex items-center gap-1 text-[#8d8d8a]">
-              <button className="p-1.5 hover:text-[#131311] transition-colors"><Activity className="w-3.5 h-3.5" /></button>
+            {/* User avatar — Manus ink circle initials */}
+            <div className="grid size-9 place-items-center rounded-full bg-[var(--color-ink)] font-mono text-xs font-bold text-[var(--color-cream)]">
+              {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'U'}
             </div>
           </div>
         </header>
 
         {/* Inner page container */}
-        <main className="flex-grow p-6 md:p-8 relative overflow-y-auto max-w-7xl w-full mx-auto">
+        <main className="flex-grow p-4 sm:p-6 lg:p-10 relative overflow-y-auto max-w-[1440px] w-full mx-auto">
           {orgError && (
             <div className="mb-6 p-3.5 bg-red-50 border border-red-200 text-red-500 font-mono text-xs flex justify-between items-start rounded-lg">
               <span>Error: {orgError}</span>
@@ -616,7 +618,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
               <p className="text-xs text-[#8d8d8a] leading-relaxed">
                 Organizations separate billing, projects, user teams, and edge evaluation boundaries.
               </p>
-              
+
               <div className="flex flex-col gap-1.5">
                 <label className="font-mono text-[9px] text-[#8d8d8a] uppercase tracking-wider">Organization Name</label>
                 <input
