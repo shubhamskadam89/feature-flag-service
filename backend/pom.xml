@@ -138,6 +138,7 @@
 				<artifactId>prettier-maven-plugin</artifactId>
 				<version>0.22</version>
 				<configuration>
+					<skip>${prettier.skip}</skip>
 					<prettierJavaVersion>2.6.4</prettierJavaVersion>
 					<printWidth>120</printWidth>
 					<tabWidth>4</tabWidth>

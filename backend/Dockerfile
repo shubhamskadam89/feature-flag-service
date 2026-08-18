@@ -1,5 +1,5 @@
 # Stage 1: Build Spring Boot JAR
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /app
 
 # Cache Maven dependencies
