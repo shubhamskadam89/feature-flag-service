@@ -122,6 +122,14 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+<!--   xxhash-->
+        <!-- Source: https://mvnrepository.com/artifact/net.openhft/zero-allocation-hashing -->
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>zero-allocation-hashing</artifactId>
+            <version>2026.0</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 
