@@ -74,7 +74,7 @@ jobs:
           key: ${{ secrets.AWS_SSH_KEY }}
           port: ${{ secrets.AWS_SSH_PORT || 22 }}
           source: "docker-compose.prod.yaml"
-          target: "/opt/feature-flag-service"
+          target: "~/feature-flag-service"
 
       - name: Pull Docker Hub images and deploy on AWS
         uses: appleboy/ssh-action@v1.0.3
@@ -93,7 +93,8 @@ jobs:
           envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,IMAGE_TAG,POSTGRES_PASSWORD,JWT_SECRET,APP_ENV_CONFIG
           script: |
             set -e
-            cd /opt/feature-flag-service
+            mkdir -p ~/feature-flag-service
+            cd ~/feature-flag-service
 
             # Generate environment configuration for compose
             cat <<EOF > .env
@@ -104,19 +105,26 @@ jobs:
             ${APP_ENV_CONFIG}
             EOF
 
+            # Determine docker command (handle non-root / sudo fallback)
+            DOCKER_CMD="docker compose"
+            if ! docker info >/dev/null 2>&1; then
+              echo "Standard user docker access requires sudo; using sudo docker compose"
+              DOCKER_CMD="sudo docker compose"
+            fi
+
             # Authenticate with Docker Hub
-            echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+            echo "${DOCKERHUB_TOKEN}" | (docker login -u "${DOCKERHUB_USERNAME}" --password-stdin 2>/dev/null || sudo docker login -u "${DOCKERHUB_USERNAME}" --password-stdin)
 
             # Pull images directly from Docker Hub
             echo "Pulling latest container images from Docker Hub..."
-            docker compose -f docker-compose.prod.yaml pull
+            $DOCKER_CMD -f docker-compose.prod.yaml pull
 
             # Start updated services
             echo "Deploying updated services..."
-            docker compose -f docker-compose.prod.yaml up -d --remove-orphans
+            $DOCKER_CMD -f docker-compose.prod.yaml up -d --remove-orphans
 
             # Clean up old unused images
             echo "Cleaning up dangling images..."
-            docker image prune -af --filter "until=48h" || true
+            (docker image prune -af --filter "until=48h" || sudo docker image prune -af --filter "until=48h") || true
 
             echo "Deployment completed successfully."
