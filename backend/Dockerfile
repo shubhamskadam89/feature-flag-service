@@ -5,11 +5,11 @@ WORKDIR /app
 # Cache Maven dependencies
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
-RUN chmod +x ./mvnw && ./mvnw dependency:go-offline -B || true
+RUN chmod +x ./mvnw && ./mvnw dependency:go-offline -Dprettier.skip=true -B || true
 
 # Copy source code and build optimized production JAR
 COPY src ./src
-RUN ./mvnw clean package -DskipTests -B
+RUN ./mvnw clean package -DskipTests -Dprettier.skip=true -B
 
 # Stage 2: Lightweight JRE 21 Runtime
 FROM eclipse-temurin:21-jre-alpine AS runner
