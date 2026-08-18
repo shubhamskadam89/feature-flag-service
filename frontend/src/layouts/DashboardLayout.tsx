@@ -519,7 +519,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
               {projectId && (
                 <>
                   <div className="relative" ref={envDropdownRef}>
-                    <label className="group flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2" title="Choose environment">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (environmentsList.length > 0) {
+                          setIsEnvDropdownOpen(!isEnvDropdownOpen);
+                        }
+                      }}
+                      className="group flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 hover:border-[var(--color-line-strong)] transition-colors"
+                      title="Choose environment"
+                    >
                       {/* Color dot: red=Production, amber=Staging, green=others */}
                       <span className={`size-2 rounded-full ${activeEnv?.name?.toLowerCase().includes('prod') ? 'bg-[var(--color-conflict)]' :
                         activeEnv?.name?.toLowerCase().includes('stag') ? 'bg-[var(--color-caution)]' :
@@ -527,7 +536,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
                         }`} />
                       <span className="font-mono text-[11px] font-semibold">{activeEnv?.name || '—'}</span>
                       <ChevronDown className="w-3 h-3 text-[var(--color-muted-text)]" />
-                    </label>
+                    </button>
 
                     {isEnvDropdownOpen && environmentsList.length > 0 && (
                       <div className="absolute left-0 mt-1.5 w-56 bg-[var(--color-surface)] border border-[var(--color-line)] rounded-xl shadow-lg z-50 overflow-hidden">
