@@ -1,0 +1,13 @@
+spring:
+  jpa:
+    show-sql: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    export:
+      defaults:
+        enabled: true
