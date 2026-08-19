@@ -162,16 +162,20 @@ func checkoutHandler(w http.ResponseWriter, r *http.Request) {
 
         {activeTab === 'curl' && (
           <pre>
-            <div><span className="text-cyan-700 font-bold">curl</span> -X POST https://api.flags.dev/v1/evaluate \</div>
-            <div>  -H <span className="text-emerald-600">"Authorization: Bearer sdk_live_8a992f..."</span> \</div>
-            <div>  -d <span className="text-emerald-600">'"key": "new_checkout", "userId": "usr_991"'</span></div>
+            <div><span className="text-cyan-700 font-bold">curl</span> -X GET https://api.flags.dev/v1/evaluate/environments/env-1/features/new_checkout?contextKey=usr_991 \</div>
+            <div>  -H <span className="text-emerald-600">"Authorization: Bearer sdk_live_8a992f..."</span></div>
             <br />
-            <div className="text-[var(--theme-text-muted)]"># Payload Response Evaluation</div>
+            <div className="text-[var(--theme-text-muted)]"># Explained Reason Response:</div>
             <div>&#123;</div>
+            <div>  <span className="text-blue-600">"key"</span>: <span className="text-emerald-600">"new_checkout"</span>,</div>
             <div className={flagEnabled ? 'text-current font-bold' : ''}>  <span className="text-blue-600">"enabled"</span>: {flagEnabled ? 'true' : 'false'},</div>
-            <div>  <span className="text-blue-600">"reason"</span>: <span className="text-emerald-600">"rule_match"</span>,</div>
-            <div>  <span className="text-blue-600">"rulesMatched"</span>: [<span className="text-emerald-600">"beta_testing_group"</span>]</div>
-            <div>&#125;</div>
+            <div>  <span className="text-blue-600">"reason"</span>: &#123;</div>
+            <div>    <span className="text-blue-600">"type"</span>: <span className="text-emerald-600">"PERCENTAGE_ROLLOUT"</span>,</div>
+            <div>    <span className="text-blue-600">"rolloutPercentage"</span>: 25.00,</div>
+            <div>    <span className="text-blue-600">"bucket"</span>: 149570,</div>
+            <div>    <span className="text-blue-600">"threshold"</span>: 250000</div>
+            <div>  &#125;</div>
+            <div>&#123;</div>
           </pre>
         )}
       </div>
