@@ -1,4 +1,4 @@
-package com.shubhamkadam.feature_flag_service.modules.evaluation;
+package com.shubhamkadam.feature_flag_service.modules.evaluation.common;
 
 import java.util.List;
 

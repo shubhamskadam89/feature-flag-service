@@ -16,6 +16,13 @@ import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundExceptio
 import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
 import com.shubhamkadam.feature_flag_service.modules.evaluation.cache.EvaluationCache;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.BulkEvaluationRequest;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.BulkEvaluationResponse;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.EvaluationResult;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.FeatureEvaluationData;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.repository.EvaluationRepository;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.rollout.PercentageRolloutEvaluator;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.service.EvaluationServiceImpl;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureType;
 import com.shubhamkadam.feature_flag_service.modules.project.Project;
 import java.util.List;
@@ -47,9 +54,17 @@ class EvaluationServiceImplTest {
     @Mock
     private EvaluationCache evaluationCache;
 
+    @Mock
+    private PercentageRolloutEvaluator percentageRolloutEvaluator;
+
     @BeforeEach
     void setUp() {
-        service = new EvaluationServiceImpl(mockEnvRepo, mockEvaluationRepo, evaluationCache);
+        service = new EvaluationServiceImpl(
+            mockEnvRepo,
+            mockEvaluationRepo,
+            evaluationCache,
+            percentageRolloutEvaluator
+        );
 
         environmentA = Environment.builder().id(ENV_ID).project(Project.builder().id(PROJECT_A).build()).build();
     }
@@ -61,7 +76,7 @@ class EvaluationServiceImplTest {
             List.of(new FeatureEvaluationData(FEATURE_ID, FEATURE_KEY, FeatureType.BOOLEAN, true, null, null))
         );
 
-        EvaluationResult result = service.evaluate(ENV_ID, FEATURE_KEY);
+        EvaluationResult result = service.evaluate(ENV_ID, FEATURE_KEY, null);
 
         assertThat(result).isEqualTo(new EvaluationResult(FEATURE_KEY, true));
     }
@@ -73,7 +88,7 @@ class EvaluationServiceImplTest {
             List.of(new FeatureEvaluationData(FEATURE_ID, FEATURE_KEY, FeatureType.BOOLEAN, false, null, null))
         );
 
-        EvaluationResult result = service.evaluate(ENV_ID, FEATURE_KEY);
+        EvaluationResult result = service.evaluate(ENV_ID, FEATURE_KEY, null);
 
         assertThat(result).isEqualTo(new EvaluationResult(FEATURE_KEY, false));
     }
@@ -85,7 +100,7 @@ class EvaluationServiceImplTest {
             List.of(new FeatureEvaluationData(FEATURE_ID, FEATURE_KEY, FeatureType.BOOLEAN, null, null, null))
         );
 
-        EvaluationResult result = service.evaluate(ENV_ID, FEATURE_KEY);
+        EvaluationResult result = service.evaluate(ENV_ID, FEATURE_KEY, null);
 
         assertThat(result).isEqualTo(new EvaluationResult(FEATURE_KEY, false));
     }
@@ -94,7 +109,9 @@ class EvaluationServiceImplTest {
     void evaluate_whenEnvironmentNotFound_throws_andDoesNotQueryDownstream() {
         when(mockEnvRepo.findByIdAndDeletedAtIsNull(ENV_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY)).isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY, null)).isInstanceOf(
+            ResourceNotFoundException.class
+        );
 
         verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
     }
@@ -104,7 +121,9 @@ class EvaluationServiceImplTest {
         when(mockEnvRepo.findByIdAndDeletedAtIsNull(ENV_ID)).thenReturn(Optional.of(environmentA));
         when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(ENV_ID)).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY)).isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY, null)).isInstanceOf(
+            ResourceNotFoundException.class
+        );
 
         verify(evaluationCache, never()).put(any(), any());
     }
@@ -116,7 +135,7 @@ class EvaluationServiceImplTest {
         when(mockEnvRepo.findByIdAndDeletedAtIsNull(ENV_ID)).thenReturn(Optional.of(environmentA));
         when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(ENV_ID)).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY))
+        assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY, null))
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining(FEATURE_KEY);
 
@@ -130,7 +149,7 @@ class EvaluationServiceImplTest {
             List.of(new FeatureEvaluationData(FEATURE_ID, FEATURE_KEY, FeatureType.STRING, true, null, null))
         );
 
-        assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY))
+        assertThatThrownBy(() -> service.evaluate(ENV_ID, FEATURE_KEY, null))
             .isInstanceOf(BadRequestException.class)
             .hasMessageContaining("Unsupported feature type");
 
@@ -211,7 +230,7 @@ class EvaluationServiceImplTest {
         assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request)).isInstanceOf(ResourceNotFoundException.class);
 
         verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
-        verifyNoInteractions(evaluationCache);
+        verify(evaluationCache, never()).put(any(), any());
     }
 
     @Test
@@ -226,24 +245,85 @@ class EvaluationServiceImplTest {
     }
 
     @Test
+    void evaluateBulk_withPercentageRolloutAndContext_evaluatesAndCachesWithContext() {
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(ENV_ID)).thenReturn(Optional.of(environmentA));
+
+        com.shubhamkadam.feature_flag_service.modules.evaluation.context.EvaluationContext context =
+            new com.shubhamkadam.feature_flag_service.modules.evaluation.context.EvaluationContext(
+                "user-123",
+                java.util.Map.of()
+            );
+
+        java.math.BigDecimal rollout50 = new java.math.BigDecimal("50.00");
+
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(ENV_ID)).thenReturn(
+            List.of(
+                new FeatureEvaluationData(UUID.randomUUID(), "checkout-v2", FeatureType.BOOLEAN, true, null, rollout50),
+                new FeatureEvaluationData(UUID.randomUUID(), "dark-mode", FeatureType.BOOLEAN, false, null, null)
+            )
+        );
+
+        when(percentageRolloutEvaluator.bucket("checkout-v2", context)).thenReturn(100_000L);
+        when(percentageRolloutEvaluator.threshold(rollout50)).thenReturn(500_000L);
+
+        BulkEvaluationRequest request = new BulkEvaluationRequest(context, List.of("checkout-v2", "dark-mode"));
+        BulkEvaluationResponse response = service.evaluateBulk(ENV_ID, request);
+
+        EvaluationResult checkoutV2Result = new EvaluationResult(
+            "checkout-v2",
+            true,
+            com.shubhamkadam.feature_flag_service.modules.evaluation.common.EvaluationReason.percentageRollout(
+                rollout50,
+                100_000L,
+                500_000L
+            )
+        );
+        EvaluationResult darkModeResult = new EvaluationResult("dark-mode", false);
+
+        assertThat(response.results()).containsExactly(checkoutV2Result, darkModeResult);
+
+        verify(evaluationCache).put(ENV_ID, checkoutV2Result, context);
+        verify(evaluationCache).put(ENV_ID, darkModeResult);
+    }
+
+    @Test
+    void evaluateBulk_withPercentageRolloutAndNullContext_throws() {
+        when(mockEnvRepo.findByIdAndDeletedAtIsNull(ENV_ID)).thenReturn(Optional.of(environmentA));
+
+        java.math.BigDecimal rollout50 = new java.math.BigDecimal("50.00");
+
+        when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(ENV_ID)).thenReturn(
+            List.of(
+                new FeatureEvaluationData(UUID.randomUUID(), "checkout-v2", FeatureType.BOOLEAN, true, null, rollout50)
+            )
+        );
+
+        BulkEvaluationRequest request = new BulkEvaluationRequest(null, List.of("checkout-v2"));
+
+        assertThatThrownBy(() -> service.evaluateBulk(ENV_ID, request))
+            .isInstanceOf(BadRequestException.class)
+            .hasMessageContaining("Context is required for percentage rollout");
+
+        verify(evaluationCache, never()).put(any(), any());
+        verify(evaluationCache, never()).put(any(), any(), any());
+    }
+
+    @Test
     void shouldReturnCachedResultWithoutQueryingRepository() {
         UUID environmentId = UUID.randomUUID();
         String featureKey = "checkout";
 
         EvaluationResult cachedResult = new EvaluationResult(featureKey, true);
 
-        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
-            Optional.of(org.mockito.Mockito.mock(Environment.class))
-        );
-
         when(evaluationCache.get(environmentId, featureKey)).thenReturn(Optional.of(cachedResult));
 
-        EvaluationResult result = service.evaluate(environmentId, featureKey);
+        EvaluationResult result = service.evaluate(environmentId, featureKey, null);
 
         assertThat(result).isEqualTo(cachedResult);
 
         verify(evaluationCache).get(environmentId, featureKey);
 
+        verify(mockEnvRepo, never()).findByIdAndDeletedAtIsNull(any());
         verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
     }
 
@@ -254,17 +334,14 @@ class EvaluationServiceImplTest {
 
         EvaluationResult cachedResult = new EvaluationResult(featureKey, false);
 
-        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
-            Optional.of(org.mockito.Mockito.mock(Environment.class))
-        );
-
         when(evaluationCache.get(environmentId, featureKey)).thenReturn(Optional.of(cachedResult));
 
-        EvaluationResult result = service.evaluate(environmentId, featureKey);
+        EvaluationResult result = service.evaluate(environmentId, featureKey, null);
 
         assertThat(result).isEqualTo(cachedResult);
         assertThat(result.enabled()).isFalse();
 
+        verify(mockEnvRepo, never()).findByIdAndDeletedAtIsNull(any());
         verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
     }
 
@@ -290,7 +367,7 @@ class EvaluationServiceImplTest {
 
         when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId)).thenReturn(List.of(data));
 
-        EvaluationResult result = service.evaluate(environmentId, featureKey);
+        EvaluationResult result = service.evaluate(environmentId, featureKey, null);
 
         assertThat(result.key()).isEqualTo(featureKey);
         assertThat(result.enabled()).isTrue();
@@ -324,7 +401,7 @@ class EvaluationServiceImplTest {
 
         when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId)).thenReturn(List.of(data));
 
-        EvaluationResult result = service.evaluate(environmentId, featureKey);
+        EvaluationResult result = service.evaluate(environmentId, featureKey, null);
 
         assertThat(result.enabled()).isFalse();
 
@@ -364,10 +441,6 @@ class EvaluationServiceImplTest {
 
         BulkEvaluationRequest request = new BulkEvaluationRequest(List.of("checkout", "payments"));
 
-        when(mockEnvRepo.findByIdAndDeletedAtIsNull(environmentId)).thenReturn(
-            Optional.of(org.mockito.Mockito.mock(Environment.class))
-        );
-
         when(evaluationCache.get(environmentId, "checkout")).thenReturn(
             Optional.of(new EvaluationResult("checkout", true))
         );
@@ -383,6 +456,7 @@ class EvaluationServiceImplTest {
             new EvaluationResult("payments", false)
         );
 
+        verify(mockEnvRepo, never()).findByIdAndDeletedAtIsNull(any());
         verify(mockEvaluationRepo, never()).findAllEvaluationDataByEnvironmentId(any());
     }
 
@@ -436,7 +510,7 @@ class EvaluationServiceImplTest {
         // DB fetch fails (no feature in active database representation)
         when(mockEvaluationRepo.findAllEvaluationDataByEnvironmentId(environmentId)).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.evaluate(environmentId, "unknown-key")).isInstanceOf(
+        assertThatThrownBy(() -> service.evaluate(environmentId, "unknown-key", null)).isInstanceOf(
             ResourceNotFoundException.class
         );
     }
@@ -458,7 +532,7 @@ class EvaluationServiceImplTest {
             )
         );
 
-        assertThatThrownBy(() -> service.evaluate(environmentId, "unsupported-key")).isInstanceOf(
+        assertThatThrownBy(() -> service.evaluate(environmentId, "unsupported-key", null)).isInstanceOf(
             BadRequestException.class
         );
     }

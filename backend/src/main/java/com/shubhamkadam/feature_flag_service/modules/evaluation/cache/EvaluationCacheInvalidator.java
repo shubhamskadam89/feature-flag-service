@@ -14,7 +14,7 @@ public class EvaluationCacheInvalidator {
 
     public void evictAfterCommit(UUID environmentId, String featureKey) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            evaluationCache.evict(environmentId, featureKey);
+            evaluationCache.invalidate(environmentId, featureKey);
             return;
         }
 
@@ -22,7 +22,7 @@ public class EvaluationCacheInvalidator {
             new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    evaluationCache.evict(environmentId, featureKey);
+                    evaluationCache.invalidate(environmentId, featureKey);
                 }
             }
         );

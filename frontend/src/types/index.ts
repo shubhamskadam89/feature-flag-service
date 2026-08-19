@@ -83,3 +83,33 @@ export interface PageResponse<T> {
   number: number;
   empty: boolean;
 }
+
+export type EvaluationReasonType = 'STATIC' | 'PERCENTAGE_ROLLOUT' | 'TARGETING_RULE' | 'DEFAULT';
+
+export interface EvaluationReason {
+  type: EvaluationReasonType;
+  rolloutPercentage?: number;
+  bucket?: number;
+  threshold?: number;
+}
+
+export interface EvaluationContext {
+  key: string;
+  attributes?: Record<string, unknown>;
+}
+
+export interface EvaluationResult {
+  key: string;
+  enabled: boolean;
+  reason: EvaluationReason;
+}
+
+export interface BulkEvaluationRequest {
+  context?: EvaluationContext | null;
+  keys: string[];
+}
+
+export interface BulkEvaluationResponse {
+  results: EvaluationResult[];
+}
+

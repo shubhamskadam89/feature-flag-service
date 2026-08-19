@@ -9,6 +9,8 @@ import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentService;
 import com.shubhamkadam.feature_flag_service.modules.evaluation.cache.EvaluationCacheProperties;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.EvaluationResult;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.service.EvaluationService;
 import com.shubhamkadam.feature_flag_service.modules.feature.Feature;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureRepository;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureService;
@@ -27,7 +29,6 @@ import com.shubhamkadam.feature_flag_service.modules.user.User;
 import com.shubhamkadam.feature_flag_service.modules.user.UserRepository;
 import com.shubhamkadam.feature_flag_service.security.OrganizationContextHolder;
 import jakarta.persistence.EntityManager;
-import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -204,7 +205,7 @@ class EvaluationCacheInvalidationIntegrationTest {
             stateFor(checkout, envA, true);
 
             // 1. Initial request evaluates to true and populates cache
-            EvaluationResult initial = evaluationService.evaluate(envA.getId(), "checkout");
+            EvaluationResult initial = evaluationService.evaluate(envA.getId(), "checkout", null);
             assertThat(initial.enabled()).isTrue();
 
             String redisKey = "evaluation:" + envA.getId() + ":checkout";
@@ -217,7 +218,7 @@ class EvaluationCacheInvalidationIntegrationTest {
             assertThat(evaluationRedisTemplate.hasKey(redisKey)).isFalse();
 
             // 4. Next evaluation evaluates to false (from DB)
-            EvaluationResult afterToggle = evaluationService.evaluate(envA.getId(), "checkout");
+            EvaluationResult afterToggle = evaluationService.evaluate(envA.getId(), "checkout", null);
             assertThat(afterToggle.enabled()).isFalse();
         } finally {
             clearSecurityContext();
@@ -260,9 +261,9 @@ class EvaluationCacheInvalidationIntegrationTest {
             stateFor(checkoutB, envB2, true);
 
             // Populate Redis for all three
-            assertThat(evaluationService.evaluate(envA.getId(), "checkout").enabled()).isTrue();
-            assertThat(evaluationService.evaluate(envB.getId(), "checkout").enabled()).isTrue();
-            assertThat(evaluationService.evaluate(envB2.getId(), "checkout").enabled()).isTrue();
+            assertThat(evaluationService.evaluate(envA.getId(), "checkout", null).enabled()).isTrue();
+            assertThat(evaluationService.evaluate(envB.getId(), "checkout", null).enabled()).isTrue();
+            assertThat(evaluationService.evaluate(envB2.getId(), "checkout", null).enabled()).isTrue();
 
             String keyA = "evaluation:" + envA.getId() + ":checkout";
             String keyB = "evaluation:" + envB.getId() + ":checkout";
@@ -283,7 +284,7 @@ class EvaluationCacheInvalidationIntegrationTest {
             assertThat(evaluationRedisTemplate.hasKey(keyB2)).isTrue();
 
             // Evaluating Project A feature should throw 404
-            assertThatThrownBy(() -> evaluationService.evaluate(envA.getId(), "checkout")).isInstanceOf(
+            assertThatThrownBy(() -> evaluationService.evaluate(envA.getId(), "checkout", null)).isInstanceOf(
                 ResourceNotFoundException.class
             );
         } finally {
@@ -314,9 +315,9 @@ class EvaluationCacheInvalidationIntegrationTest {
             stateFor(checkout, envB, true);
 
             // Populate Redis
-            assertThat(evaluationService.evaluate(envA.getId(), "checkout").enabled()).isTrue();
-            assertThat(evaluationService.evaluate(envA.getId(), "payments").enabled()).isFalse();
-            assertThat(evaluationService.evaluate(envB.getId(), "checkout").enabled()).isTrue();
+            assertThat(evaluationService.evaluate(envA.getId(), "checkout", null).enabled()).isTrue();
+            assertThat(evaluationService.evaluate(envA.getId(), "payments", null).enabled()).isFalse();
+            assertThat(evaluationService.evaluate(envB.getId(), "checkout", null).enabled()).isTrue();
 
             String keyA_checkout = "evaluation:" + envA.getId() + ":checkout";
             String keyA_payments = "evaluation:" + envA.getId() + ":payments";
@@ -348,7 +349,7 @@ class EvaluationCacheInvalidationIntegrationTest {
             stateFor(checkout, envA, true);
 
             // Populate Redis
-            EvaluationResult initial = evaluationService.evaluate(envA.getId(), "checkout");
+            EvaluationResult initial = evaluationService.evaluate(envA.getId(), "checkout", null);
             assertThat(initial.enabled()).isTrue();
 
             String redisKey = "evaluation:" + envA.getId() + ":checkout";
@@ -371,7 +372,7 @@ class EvaluationCacheInvalidationIntegrationTest {
             assertThat(evaluationRedisTemplate.hasKey(redisKey)).isTrue();
 
             // Cached TRUE should still be returned
-            EvaluationResult result = evaluationService.evaluate(envA.getId(), "checkout");
+            EvaluationResult result = evaluationService.evaluate(envA.getId(), "checkout", null);
             assertThat(result.enabled()).isTrue();
 
             // Verify DB rolled back

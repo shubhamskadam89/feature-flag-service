@@ -1,13 +1,18 @@
-package com.shubhamkadam.feature_flag_service.modules.evaluation;
+package com.shubhamkadam.feature_flag_service.modules.evaluation.common;
 
 import com.shubhamkadam.feature_flag_service.exceptions.BadRequestException;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.context.EvaluationContext;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-public record BulkEvaluationRequest(List<String> keys) {
+public record BulkEvaluationRequest(EvaluationContext context, List<String> keys) {
     private static final Pattern KEY_PATTERN = Pattern.compile("^[a-z0-9_.-]+$");
+
+    public BulkEvaluationRequest(List<String> keys) {
+        this(null, keys);
+    }
 
     public void validate() {
         if (keys == null || keys.isEmpty()) {

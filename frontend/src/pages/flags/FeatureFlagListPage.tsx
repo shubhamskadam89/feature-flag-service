@@ -7,7 +7,8 @@ import {
   Edit3, 
   Trash2, 
   HelpCircle,
-  AlertTriangle
+  AlertTriangle,
+  Cpu
 } from 'lucide-react';
 import { 
   getFeatures, 
@@ -20,6 +21,7 @@ import {
 import { getProjectByIdWithinOrganization } from '../../services/projectService';
 import { getOrganizations } from '../../services/organizationService';
 import { type Project, type Feature } from '../../types';
+import { EvaluationTesterModal } from '../../components/EvaluationTesterModal';
 
 export const FeatureFlagListPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -43,6 +45,8 @@ export const FeatureFlagListPage: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isTesterOpen, setIsTesterOpen] = useState(false);
+  const [testerInitialKey, setTesterInitialKey] = useState<string | undefined>(undefined);
 
   // Form Fields
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
@@ -238,20 +242,31 @@ export const FeatureFlagListPage: React.FC = () => {
                 <span className="label-mono text-[var(--color-lime)]">Environment: {activeEnvName}</span>
               </>
             )}
-            {currentOrgRole === 'ADMIN' && (
+            <div className="ml-auto flex items-center gap-2">
               <button
                 onClick={() => {
-                  setFlagKey('');
-                  setFlagName('');
-                  setFlagDescription('');
-                  setValidationError(null);
-                  setIsCreateOpen(true);
+                  setTesterInitialKey(undefined);
+                  setIsTesterOpen(true);
                 }}
-                className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-lime)] px-3.5 py-2 font-mono text-[10px] font-semibold text-[var(--color-ink)] transition hover:opacity-85"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-lime)]/40 bg-[var(--color-lime)]/10 px-3.5 py-2 font-mono text-[10px] font-semibold text-[var(--color-lime)] transition hover:bg-[var(--color-lime)]/20 cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" /> Create flag
+                <Cpu className="w-3.5 h-3.5" /> Evaluate Feature
               </button>
-            )}
+              {currentOrgRole === 'ADMIN' && (
+                <button
+                  onClick={() => {
+                    setFlagKey('');
+                    setFlagName('');
+                    setFlagDescription('');
+                    setValidationError(null);
+                    setIsCreateOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-lime)] px-3.5 py-2 font-mono text-[10px] font-semibold text-[var(--color-ink)] transition hover:opacity-85 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Create flag
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -385,32 +400,45 @@ export const FeatureFlagListPage: React.FC = () => {
                     </label>
                   </div>
 
-                  {currentOrgRole === 'ADMIN' && (
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => {
-                          setSelectedFeature(flag);
-                          setFlagName(flag.name);
-                          setFlagDescription(flag.description || '');
-                          setIsEditOpen(true);
-                        }}
-                        className="rounded-lg border border-[var(--color-line)] p-1.5 text-[var(--color-secondary-text)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-foreground)]"
-                        title="Edit details"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedFeature(flag);
-                          setIsDeleteOpen(true);
-                        }}
-                        className="rounded-lg border border-[var(--color-line)] p-1.5 text-[var(--color-secondary-text)] transition hover:border-[var(--color-conflict)]/50 hover:text-[var(--color-conflict)]"
-                        title="Archive flag"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex gap-1.5 items-center">
+                    <button
+                      onClick={() => {
+                        setTesterInitialKey(flag.key);
+                        setIsTesterOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-2.5 py-1.5 font-mono text-[10px] font-semibold text-[var(--color-secondary-text)] transition hover:border-[var(--color-lime)] hover:text-[var(--color-lime)] cursor-pointer"
+                      title="Test evaluation engine with context & explainability"
+                    >
+                      <Cpu className="w-3.5 h-3.5" /> Evaluate
+                    </button>
+
+                    {currentOrgRole === 'ADMIN' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            setSelectedFeature(flag);
+                            setFlagName(flag.name);
+                            setFlagDescription(flag.description || '');
+                            setIsEditOpen(true);
+                          }}
+                          className="rounded-lg border border-[var(--color-line)] p-1.5 text-[var(--color-secondary-text)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-foreground)] cursor-pointer"
+                          title="Edit details"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedFeature(flag);
+                            setIsDeleteOpen(true);
+                          }}
+                          className="rounded-lg border border-[var(--color-line)] p-1.5 text-[var(--color-secondary-text)] transition hover:border-[var(--color-conflict)]/50 hover:text-[var(--color-conflict)] cursor-pointer"
+                          title="Archive flag"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -607,6 +635,18 @@ export const FeatureFlagListPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Evaluation Tester & Explainability Modal */}
+      {activeEnvId && (
+        <EvaluationTesterModal
+          isOpen={isTesterOpen}
+          onClose={() => setIsTesterOpen(false)}
+          environmentId={activeEnvId}
+          environmentName={activeEnvName || 'Active Environment'}
+          features={features}
+          initialFeatureKey={testerInitialKey}
+        />
       )}
     </div>
   );
