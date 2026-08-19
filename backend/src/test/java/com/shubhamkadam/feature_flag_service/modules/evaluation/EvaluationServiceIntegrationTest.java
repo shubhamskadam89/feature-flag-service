@@ -6,6 +6,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.shubhamkadam.feature_flag_service.exceptions.ResourceNotFoundException;
 import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.BulkEvaluationRequest;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.BulkEvaluationResponse;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.EvaluationResult;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.service.EvaluationService;
 import com.shubhamkadam.feature_flag_service.modules.feature.Feature;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureRepository;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureType;
@@ -148,7 +152,7 @@ class EvaluationServiceIntegrationTest {
         Feature checkout = activeFeature(projectA, "checkout");
         stateFor(checkout, envA, true);
 
-        EvaluationResult result = evaluationService.evaluate(envA.getId(), "checkout");
+        EvaluationResult result = evaluationService.evaluate(envA.getId(), "checkout", null);
 
         assertThat(result.key()).isEqualTo("checkout");
         assertThat(result.enabled()).isTrue();
@@ -161,7 +165,7 @@ class EvaluationServiceIntegrationTest {
 
         // First evaluation:
         // Redis MISS -> PostgreSQL -> Redis PUT
-        EvaluationResult first = evaluationService.evaluate(envA.getId(), "checkout");
+        EvaluationResult first = evaluationService.evaluate(envA.getId(), "checkout", null);
 
         assertThat(first.key()).isEqualTo("checkout");
         assertThat(first.enabled()).isTrue();
@@ -176,7 +180,7 @@ class EvaluationServiceIntegrationTest {
 
         // Second evaluation:
         // Redis HIT -> should still return the cached TRUE.
-        EvaluationResult second = evaluationService.evaluate(envA.getId(), "checkout");
+        EvaluationResult second = evaluationService.evaluate(envA.getId(), "checkout", null);
 
         assertThat(second.key()).isEqualTo("checkout");
         assertThat(second.enabled()).isTrue();
@@ -192,7 +196,7 @@ class EvaluationServiceIntegrationTest {
         // "checkout" lives in Project B — not in Project A
         activeFeature(projectB, "checkout");
 
-        assertThatThrownBy(() -> evaluationService.evaluate(envA.getId(), "checkout")).isInstanceOf(
+        assertThatThrownBy(() -> evaluationService.evaluate(envA.getId(), "checkout", null)).isInstanceOf(
             ResourceNotFoundException.class
         );
     }
@@ -204,7 +208,7 @@ class EvaluationServiceIntegrationTest {
         // Feature exists and is active, but no FeatureState row yet
         activeFeature(projectA, "dark-mode");
 
-        EvaluationResult result = evaluationService.evaluate(envA.getId(), "dark-mode");
+        EvaluationResult result = evaluationService.evaluate(envA.getId(), "dark-mode", null);
 
         assertThat(result.key()).isEqualTo("dark-mode");
         assertThat(result.enabled()).isFalse(); // sparse-state default
@@ -222,7 +226,7 @@ class EvaluationServiceIntegrationTest {
         featureRepository.save(deletedFeature);
         featureRepository.flush(); // ensure the UPDATE reaches the DB before SELECT
 
-        assertThatThrownBy(() -> evaluationService.evaluate(envA.getId(), "legacy")).isInstanceOf(
+        assertThatThrownBy(() -> evaluationService.evaluate(envA.getId(), "legacy", null)).isInstanceOf(
             ResourceNotFoundException.class
         );
     }
@@ -234,7 +238,7 @@ class EvaluationServiceIntegrationTest {
         activeFeature(projectA, "beta-checkout");
         // deliberately no stateFor(...) call
 
-        EvaluationResult result = evaluationService.evaluate(envA.getId(), "beta-checkout");
+        EvaluationResult result = evaluationService.evaluate(envA.getId(), "beta-checkout", null);
 
         assertThat(result.enabled()).isFalse();
     }
@@ -246,7 +250,7 @@ class EvaluationServiceIntegrationTest {
         Feature f = activeFeature(projectA, "new-ui");
         stateFor(f, envA, true);
 
-        assertThat(evaluationService.evaluate(envA.getId(), "new-ui").enabled()).isTrue();
+        assertThat(evaluationService.evaluate(envA.getId(), "new-ui", null).enabled()).isTrue();
     }
 
     @Test
@@ -254,12 +258,12 @@ class EvaluationServiceIntegrationTest {
         Feature f = activeFeature(projectA, "new-ui-disabled");
         stateFor(f, envA, false);
 
-        assertThat(evaluationService.evaluate(envA.getId(), "new-ui-disabled").enabled()).isFalse();
+        assertThat(evaluationService.evaluate(envA.getId(), "new-ui-disabled", null).enabled()).isFalse();
     }
 
     @Test
     void evaluate_whenEnvironmentDoesNotExist_throws() {
-        assertThatThrownBy(() -> evaluationService.evaluate(UUID.randomUUID(), "anything")).isInstanceOf(
+        assertThatThrownBy(() -> evaluationService.evaluate(UUID.randomUUID(), "anything", null)).isInstanceOf(
             ResourceNotFoundException.class
         );
     }
@@ -272,7 +276,7 @@ class EvaluationServiceIntegrationTest {
         FeatureState state = stateFor(checkout, envA, true);
 
         // First evaluation populates Redis with TRUE.
-        EvaluationResult first = evaluationService.evaluate(envA.getId(), "checkout");
+        EvaluationResult first = evaluationService.evaluate(envA.getId(), "checkout", null);
 
         assertThat(first.enabled()).isTrue();
 
@@ -285,7 +289,7 @@ class EvaluationServiceIntegrationTest {
         featureStateRepository.saveAndFlush(state);
 
         // Cache is still valid, so we should still get TRUE.
-        EvaluationResult cached = evaluationService.evaluate(envA.getId(), "checkout");
+        EvaluationResult cached = evaluationService.evaluate(envA.getId(), "checkout", null);
 
         assertThat(cached.enabled()).isTrue();
 
@@ -295,7 +299,7 @@ class EvaluationServiceIntegrationTest {
         assertThat(evaluationRedisTemplate.hasKey(redisKey)).isFalse();
 
         // Cache MISS -> PostgreSQL -> FALSE -> Redis PUT.
-        EvaluationResult refreshed = evaluationService.evaluate(envA.getId(), "checkout");
+        EvaluationResult refreshed = evaluationService.evaluate(envA.getId(), "checkout", null);
 
         assertThat(refreshed.enabled()).isFalse();
 
@@ -311,8 +315,8 @@ class EvaluationServiceIntegrationTest {
         stateFor(enabledFeature, envA, true);
         stateFor(disabledFeature, envA, false);
 
-        EvaluationResult enabled = evaluationService.evaluate(envA.getId(), "enabled-feature");
-        EvaluationResult disabled = evaluationService.evaluate(envA.getId(), "disabled-feature");
+        EvaluationResult enabled = evaluationService.evaluate(envA.getId(), "enabled-feature", null);
+        EvaluationResult disabled = evaluationService.evaluate(envA.getId(), "disabled-feature", null);
 
         assertThat(enabled.enabled()).isTrue();
         assertThat(disabled.enabled()).isFalse();
@@ -323,8 +327,8 @@ class EvaluationServiceIntegrationTest {
         assertThat(evaluationRedisTemplate.hasKey(enabledKey)).isTrue();
         assertThat(evaluationRedisTemplate.hasKey(disabledKey)).isTrue();
 
-        EvaluationResult cachedEnabled = evaluationService.evaluate(envA.getId(), "enabled-feature");
-        EvaluationResult cachedDisabled = evaluationService.evaluate(envA.getId(), "disabled-feature");
+        EvaluationResult cachedEnabled = evaluationService.evaluate(envA.getId(), "enabled-feature", null);
+        EvaluationResult cachedDisabled = evaluationService.evaluate(envA.getId(), "disabled-feature", null);
 
         assertThat(cachedEnabled.enabled()).isTrue();
         assertThat(cachedDisabled.enabled()).isFalse();

@@ -1,5 +1,6 @@
 package com.shubhamkadam.feature_flag_service.modules.evaluation.rollout;
 
+import com.shubhamkadam.feature_flag_service.modules.evaluation.context.EvaluationContext;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import net.openhft.hashing.LongHashFunction;
@@ -16,8 +17,12 @@ public class DeterministicPercentageRolloutEvaluator implements PercentageRollou
     private static final LongHashFunction HASH_FUNCTION = LongHashFunction.xx();
 
     @Override
-    public long bucket(String featureKey, String contextKey) {
-        byte[] input = canonicalizer.canonicalize(featureKey, contextKey);
+    public long bucket(String featureKey, EvaluationContext context) {
+        if (context == null) {
+            throw new IllegalArgumentException("Evaluation context must not be null");
+        }
+
+        byte[] input = canonicalizer.canonicalize(featureKey, context.key());
 
         long hash = HASH_FUNCTION.hashBytes(input);
 
@@ -40,7 +45,7 @@ public class DeterministicPercentageRolloutEvaluator implements PercentageRollou
     }
 
     @Override
-    public boolean evaluate(String featureKey, String contextKey, BigDecimal rolloutPercentage) {
-        return bucket(featureKey, contextKey) < threshold(rolloutPercentage);
+    public boolean evaluate(String featureKey, EvaluationContext context, BigDecimal rolloutPercentage) {
+        return bucket(featureKey, context) < threshold(rolloutPercentage);
     }
 }

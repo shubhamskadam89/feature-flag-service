@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.BulkEvaluationRequest;
 import com.shubhamkadam.feature_flag_service.modules.feature.Feature;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureRepository;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureType;

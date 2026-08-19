@@ -2,7 +2,9 @@ package com.shubhamkadam.feature_flag_service.modules.evaluation.rollout;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.shubhamkadam.feature_flag_service.modules.evaluation.context.EvaluationContext;
 import java.math.BigDecimal;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class DeterministicPercentageRolloutEvaluatorTest {
@@ -11,9 +13,13 @@ class DeterministicPercentageRolloutEvaluatorTest {
         new DeterministicRolloutInputCanonicalizer()
     );
 
+    private EvaluationContext ctx(String key) {
+        return new EvaluationContext(key, Map.of());
+    }
+
     @Test
     void bucket_shouldBeWithinDefinedRange() {
-        long bucket = evaluator.bucket("checkout-v2", "user-123");
+        long bucket = evaluator.bucket("checkout-v2", ctx("user-123"));
 
         assertTrue(bucket >= 0);
         assertTrue(bucket < 1_000_000);
@@ -21,20 +27,20 @@ class DeterministicPercentageRolloutEvaluatorTest {
 
     @Test
     void sameFeatureAndContext_shouldProduceSameBucket() {
-        long first = evaluator.bucket("checkout-v2", "user-123");
-        long second = evaluator.bucket("checkout-v2", "user-123");
+        long first = evaluator.bucket("checkout-v2", ctx("user-123"));
+        long second = evaluator.bucket("checkout-v2", ctx("user-123"));
 
         assertEquals(first, second);
     }
 
     @Test
     void zeroPercent_shouldAlwaysBeDisabled() {
-        assertFalse(evaluator.evaluate("checkout-v2", "user-123", new BigDecimal("0.00")));
+        assertFalse(evaluator.evaluate("checkout-v2", ctx("user-123"), new BigDecimal("0.00")));
     }
 
     @Test
     void hundredPercent_shouldAlwaysBeEnabled() {
-        assertTrue(evaluator.evaluate("checkout-v2", "user-123", new BigDecimal("100.00")));
+        assertTrue(evaluator.evaluate("checkout-v2", ctx("user-123"), new BigDecimal("100.00")));
     }
 
     @Test
@@ -51,20 +57,20 @@ class DeterministicPercentageRolloutEvaluatorTest {
     @Test
     void percentageBelowZero_shouldBeRejected() {
         assertThrows(IllegalArgumentException.class, () ->
-            evaluator.evaluate("checkout-v2", "user-123", new BigDecimal("-0.01"))
+            evaluator.evaluate("checkout-v2", ctx("user-123"), new BigDecimal("-0.01"))
         );
     }
 
     @Test
     void percentageAboveHundred_shouldBeRejected() {
         assertThrows(IllegalArgumentException.class, () ->
-            evaluator.evaluate("checkout-v2", "user-123", new BigDecimal("100.01"))
+            evaluator.evaluate("checkout-v2", ctx("user-123"), new BigDecimal("100.01"))
         );
     }
 
     @Test
     void nullPercentage_shouldBeRejected() {
-        assertThrows(IllegalArgumentException.class, () -> evaluator.evaluate("checkout-v2", "user-123", null));
+        assertThrows(IllegalArgumentException.class, () -> evaluator.evaluate("checkout-v2", ctx("user-123"), null));
     }
 
     @Test
@@ -77,22 +83,22 @@ class DeterministicPercentageRolloutEvaluatorTest {
     @Test
     void blankContext_shouldBeRejected() {
         assertThrows(IllegalArgumentException.class, () ->
-            evaluator.evaluate("checkout-v2", "   ", new BigDecimal("50.00"))
+            evaluator.evaluate("checkout-v2", ctx("   "), new BigDecimal("50.00"))
         );
     }
 
     @Test
     void knownInput_checkoutUser123_shouldProduceStableBucket() {
-        assertEquals(504_602L, evaluator.bucket("checkout-v2", "user-123"));
+        assertEquals(504_602L, evaluator.bucket("checkout-v2", ctx("user-123")));
     }
 
     @Test
     void knownInput_checkoutUser456_shouldProduceStableBucket() {
-        assertEquals(77_133L, evaluator.bucket("checkout-v2", "user-456"));
+        assertEquals(77_133L, evaluator.bucket("checkout-v2", ctx("user-456")));
     }
 
     @Test
     void knownInput_newDashboardUser123_shouldProduceStableBucket() {
-        assertEquals(149_570L, evaluator.bucket("new-dashboard", "user-123"));
+        assertEquals(149_570L, evaluator.bucket("new-dashboard", ctx("user-123")));
     }
 }

@@ -41,7 +41,7 @@ class EvaluationCacheInvalidatorTest {
     void evictAfterCommit_withoutTransaction_evictsImmediately() {
         invalidator.evictAfterCommit(environmentId, featureKey);
 
-        verify(evaluationCache).evict(environmentId, featureKey);
+        verify(evaluationCache).invalidate(environmentId, featureKey);
     }
 
     @Test
@@ -50,13 +50,13 @@ class EvaluationCacheInvalidatorTest {
 
         invalidator.evictAfterCommit(environmentId, featureKey);
 
-        verify(evaluationCache, never()).evict(any(), any());
+        verify(evaluationCache, never()).invalidate(any(), any());
 
         TransactionSynchronization synchronization = TransactionSynchronizationManager.getSynchronizations().get(0);
 
         synchronization.afterCommit();
 
-        verify(evaluationCache).evict(environmentId, featureKey);
+        verify(evaluationCache).invalidate(environmentId, featureKey);
     }
 
     @Test
@@ -65,11 +65,11 @@ class EvaluationCacheInvalidatorTest {
 
         invalidator.evictAfterCommit(environmentId, featureKey);
 
-        verify(evaluationCache, never()).evict(any(), any());
+        verify(evaluationCache, never()).invalidate(any(), any());
 
         // Simulate rollback by deliberately NOT invoking afterCommit().
         TransactionSynchronizationManager.clearSynchronization();
 
-        verify(evaluationCache, never()).evict(any(), any());
+        verify(evaluationCache, never()).invalidate(any(), any());
     }
 }

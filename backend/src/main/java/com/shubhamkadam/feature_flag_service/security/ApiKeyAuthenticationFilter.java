@@ -14,25 +14,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Authenticates requests to the evaluation API ({@code /api/v1/evaluate/**}) using
- * environment API keys supplied in the {@code X-Api-Key} header.
- *
- * <p>Verification steps:
- * <ol>
- *   <li>Extract the {@code X-Api-Key} header.</li>
- *   <li>Hash the plaintext key (SHA-256) and look up the environment by hash.</li>
- *   <li>Verify the {@code {environmentId}} path segment matches the resolved environment
- *       — prevents using a valid key from Environment A to query Environment B.</li>
- *   <li>Attach the resolved {@link Environment} to the request as an attribute
- *       ({@value #RESOLVED_ENVIRONMENT_ATTR}) so the controller can use it without
- *       an extra DB round-trip.</li>
- * </ol>
- *
- * <p>Any failure returns {@code 401} without revealing whether the environment exists.
+ * environment API keys supplied in the {@code X-Api-Key} header or existing JWT dashboard authentication.
  */
 @Component
 @RequiredArgsConstructor
@@ -63,6 +53,17 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
         @NonNull HttpServletResponse response,
         @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+        // If request is already authenticated (e.g. via JWT from the web dashboard UI), allow evaluation
+        Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
+        if (
+            existingAuth != null &&
+            existingAuth.isAuthenticated() &&
+            !(existingAuth instanceof AnonymousAuthenticationToken)
+        ) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String apiKey = request.getHeader(API_KEY_HEADER);
 
         if (apiKey == null || apiKey.isBlank()) {

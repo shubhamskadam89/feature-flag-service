@@ -10,7 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.shubhamkadam.feature_flag_service.modules.evaluation.EvaluationResult;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.EvaluationResult;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;

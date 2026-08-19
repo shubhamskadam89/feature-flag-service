@@ -2,7 +2,7 @@ package com.shubhamkadam.feature_flag_service.modules.evaluation.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.shubhamkadam.feature_flag_service.modules.evaluation.EvaluationResult;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.EvaluationResult;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;

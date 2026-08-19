@@ -44,6 +44,13 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
+        <!-- Source: https://mvnrepository.com/artifact/com.hubspot.maven.plugins/prettier-maven-plugin -->
+        <dependency>
+            <groupId>com.hubspot.maven.plugins</groupId>
+            <artifactId>prettier-maven-plugin</artifactId>
+            <version>0.22</version>
+            <scope>compile</scope>
+        </dependency>
 
 
             <dependency>
@@ -146,7 +153,7 @@
 				<artifactId>prettier-maven-plugin</artifactId>
 				<version>0.22</version>
 				<configuration>
-					<skip>${prettier.skip}</skip>
+					<skip>prettier</skip>
 					<prettierJavaVersion>2.6.4</prettierJavaVersion>
 					<printWidth>120</printWidth>
 					<tabWidth>4</tabWidth>

@@ -9,6 +9,10 @@ import static org.mockito.Mockito.when;
 
 import com.shubhamkadam.feature_flag_service.modules.environment.Environment;
 import com.shubhamkadam.feature_flag_service.modules.environment.EnvironmentRepository;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.BulkEvaluationRequest;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.BulkEvaluationResponse;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.EvaluationResult;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.service.EvaluationService;
 import com.shubhamkadam.feature_flag_service.modules.feature.Feature;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureRepository;
 import com.shubhamkadam.feature_flag_service.modules.feature.FeatureType;
@@ -158,7 +162,7 @@ class EvaluationCacheResilienceIntegrationTest {
             .set(anyString(), any(), anyLong(), any());
 
         // Should fall back to Postgres and return the correct result without throwing
-        EvaluationResult result = evaluationService.evaluate(envA.getId(), "checkout");
+        EvaluationResult result = evaluationService.evaluate(envA.getId(), "checkout", null);
 
         assertThat(result.enabled()).isTrue();
     }

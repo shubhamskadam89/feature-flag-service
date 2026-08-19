@@ -1,6 +1,6 @@
 package com.shubhamkadam.feature_flag_service.modules.evaluation.cache.config;
 
-import com.shubhamkadam.feature_flag_service.modules.evaluation.EvaluationResult;
+import com.shubhamkadam.feature_flag_service.modules.evaluation.common.EvaluationResult;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
